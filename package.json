@@ -1,0 +1,26 @@
+{
+  "name": "miniggmeet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheVu09/miniGGMeet.git"
+  },
+  "keywords": [
+    "thevu",
+    "kiencuong",
+    "trananh",
+    "nodejs",
+    "miniggmeet"
+  ],
+  "author": "thevu, kiencuong, trananh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TheVu09/miniGGMeet/issues"
+  },
+  "homepage": "https://github.com/TheVu09/miniGGMeet#readme"
+}
