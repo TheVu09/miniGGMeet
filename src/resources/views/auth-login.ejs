@@ -6,7 +6,7 @@
     <title>Đăng nhập</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link rel="stylesheet" href="/public/styles.css" />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div class="auth-wrap">
@@ -19,12 +19,12 @@
                 <div class="card card-3d h-100 p-4 tilt-on-hover auth-left">
                   <div class="d-flex align-items-center gap-2 mb-3">
                     <div class="fs-4">🎥</div>
-                    <div class="fw-bold fs-4">VCACORD</div>
+                    <div class="fw-bold fs-4">MINIGGMeet</div>
                   </div>
                   <h5 class="text-light">Join Our Community</h5>
                   <p class="text-secondary">Kết nối bạn bè, đồng nghiệp, và cộng đồng bằng gọi thoại, video, và nhắn tin chất lượng cao.</p>
                   <ul class="list-unstyled mt-3 d-grid gap-2">
-                    <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Tối đa 150 người tham gia</li>
+                    <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Tối đa 250 người tham gia</li>
                     <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Mã hoá đầu-cuối (MVP)</li>
                     <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Chia sẻ màn hình & ghi lại</li>
                     <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Nhắn tin thời gian thực</li>
@@ -49,11 +49,11 @@
                   </div>
                   <div class="text-center text-secondary small mb-3">hoặc</div>
 
-                  <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
-                  <form class="row g-3" method="post" action="/auth/login">
+                  <div class="alert alert-danger d-none" id="errorAlert"></div>
+                  <form class="row g-3" id="loginForm">
                     <div class="col-12">
-                      <label class="form-label">Tên đăng nhập</label>
-                      <input class="form-control" name="username" placeholder="Nhập tên đăng nhập" required />
+                      <label class="form-label">Email</label>
+                      <input class="form-control" name="email" type="email" placeholder="Nhập email" required />
                     </div>
                     <div class="col-12">
                       <label class="form-label">Mật khẩu</label>
@@ -70,7 +70,10 @@
                       <a href="#" class="text-secondary small">Quên mật khẩu?</a>
                     </div>
                     <div class="col-12 d-grid">
-                      <button class="btn btn-primary btn-3d" type="submit">Đăng nhập</button>
+                      <button class="btn btn-primary btn-3d" type="submit" id="loginBtn">
+                        <span class="spinner-border spinner-border-sm d-none" id="loginSpinner"></span>
+                        <span id="loginText">Đăng nhập</span>
+                      </button>
                     </div>
                   </form>
                 </div>
@@ -81,5 +84,45 @@
       </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api/auth.api.js"></script>
+    <script>
+      const loginForm = document.getElementById('loginForm')
+      const errorAlert = document.getElementById('errorAlert')
+      const loginBtn = document.getElementById('loginBtn')
+      const loginSpinner = document.getElementById('loginSpinner')
+      const loginText = document.getElementById('loginText')
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        
+        // Get form data
+        const formData = new FormData(loginForm)
+        const email = formData.get('email')
+        const password = formData.get('password')
+        
+        // Show loading state
+        loginBtn.disabled = true
+        loginSpinner.classList.remove('d-none')
+        loginText.textContent = 'Đang đăng nhập...'
+        errorAlert.classList.add('d-none')
+        
+        try {
+          // Call API
+          await authAPI.login(email, password)
+          
+          // Redirect to home on success
+          window.location.href = '/'
+        } catch (error) {
+          // Show error
+          errorAlert.textContent = error.message
+          errorAlert.classList.remove('d-none')
+          
+          // Reset button state
+          loginBtn.disabled = false
+          loginSpinner.classList.add('d-none')
+          loginText.textContent = 'Đăng nhập'
+        }
+      })
+    </script>
   </body>
   </html>

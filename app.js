@@ -5,7 +5,7 @@ const http = require('http')
 const session = require('express-session')
 const MongoStore = require('connect-mongo')
 const cookieParser = require('cookie-parser')
-const { initSocket } = require('./src/util/socket')
+const { initSocket } = require('./src/socket')
 const connectDB = require('./src/config/db')
 
 const app = express()
@@ -57,11 +57,21 @@ app.use((req, res, next) => {
 })
 
 // Static files
-app.use('/public', express.static(path.join(__dirname, 'src', 'public')))
+app.use(express.static(path.join(__dirname, 'src', 'public')))
 
 // Routes
-const routes = require('./src/routes')
-app.use('/', routes)
+const routes = require('./src/api/v1/routes')
+const viewRoutes = require('./src/api/v1/routes/views.routes')
+const { errorHandler } = require('./src/api/v1/middleware/error.middleware')
+
+// View Routes (SSR - Server-Side Rendering) - Must be first
+app.use('/', viewRoutes)
+
+// API Routes v1 (REST API)
+app.use('/api/v1', routes)
+
+// Global error handler (must be after all routes)
+app.use(errorHandler)
 
 // 404 đơn giản
 app.use((req, res) => {

@@ -143,7 +143,7 @@ socket.on('webrtc:peer-join', ({ id, info }) => {
     if (id === socket.id) {
         console.log('⏭️ Skipping peer-join for self:', id)
         return
-    }cách
+    }
     
     state.peers[id] = { displayName: info?.displayName || 'Người dùng' }
     if (!state.pcPeers[id]) {
@@ -246,14 +246,23 @@ async function initMedia() {
         }
         
         console.log('🎥 Local media initialized, emitting webrtc:ready')
-        // Emit webrtc:ready now that socket.data (set by meeting:join) exists on server side
-        socket.emit('webrtc:ready', { code })
     } catch (e) {
         console.error('❌ Cannot access camera/mic:', e)
-        addMessage('Không thể truy cập camera/mic')
+        addMessage('⚠️ Không thể truy cập camera/mic. Bạn sẽ chỉ nghe/xem được người khác.')
         // Show avatar if camera fails
         const localTile = document.getElementById('tile-local')
         if (localTile) localTile.classList.add('video-off')
+        
+        // Set avatar display even without camera
+        const avatarLocal = document.getElementById('avatar-local')
+        if (avatarLocal) {
+            setAvatarDisplay(avatarLocal, self.displayName)
+        }
+    } finally {
+        // ALWAYS emit webrtc:ready, even if camera/mic failed
+        // This allows user to still receive other peers' streams
+        console.log('📡 Emitting webrtc:ready')
+        socket.emit('webrtc:ready', { code })
     }
 }
 
@@ -501,6 +510,125 @@ recordBtn.addEventListener('click', () => {
         recordBtn.classList.remove('recording')
     }
 })
+
+// Chat toggle
+const chatToggleBtn = document.getElementById('chatToggleBtn')
+const sidebar = document.querySelector('.sidebar')
+const chatToggleIcon = chatToggleBtn.querySelector('i')
+
+chatToggleBtn.addEventListener('click', () => {
+    const isHidden = sidebar.classList.toggle('hidden')
+    chatToggleBtn.setAttribute('aria-pressed', !isHidden)
+    
+    if (isHidden) {
+        chatToggleBtn.title = 'Mở chat'
+        if (chatToggleIcon) chatToggleIcon.className = 'bi bi-chat-dots'
+    } else {
+        chatToggleBtn.title = 'Đóng chat'
+        if (chatToggleIcon) chatToggleIcon.className = 'bi bi-chat-dots-fill'
+    }
+})
+
+// Layout settings
+const layoutRadios = document.querySelectorAll('input[name="layoutMode"]')
+const tileCountSlider = document.getElementById('tileCountSlider')
+const tileCountValue = document.getElementById('tileCountValue')
+const tileCountMin = document.getElementById('tileCountMin')
+const tileCountMax = document.getElementById('tileCountMax')
+const hideNoVideoCheckbox = document.getElementById('hideNoVideo')
+
+// Load saved preferences
+const savedLayout = localStorage.getItem('meetingLayout') || 'auto'
+const savedTileCount = localStorage.getItem('meetingTileCount') || '16'
+const savedHideNoVideo = localStorage.getItem('meetingHideNoVideo') === 'true'
+
+document.getElementById('layout' + savedLayout.charAt(0).toUpperCase() + savedLayout.slice(1))?.setAttribute('checked', 'true')
+tileCountSlider.value = savedTileCount
+tileCountValue.textContent = savedTileCount
+hideNoVideoCheckbox.checked = savedHideNoVideo
+
+function applyLayout(mode) {
+    videoGrid.className = 'video-grid'
+    if (mode !== 'auto' && mode !== 'tiled') {
+        videoGrid.classList.add('layout-' + mode)
+    }
+    
+    // Adjust grid columns based on tile count
+    const count = parseInt(tileCountSlider.value)
+    const cols = Math.ceil(Math.sqrt(count))
+    if (mode === 'auto' || mode === 'tiled') {
+        videoGrid.style.gridTemplateColumns = `repeat(auto-fill, minmax(200px, 1fr))`
+    }
+    
+    localStorage.setItem('meetingLayout', mode)
+    console.log('📐 Layout changed to:', mode)
+}
+
+function applyTileCount(count) {
+    const maxTiles = parseInt(count)
+    const tiles = videoGrid.querySelectorAll('.video-tile')
+    
+    tiles.forEach((tile, index) => {
+        if (index >= maxTiles) {
+            tile.style.display = 'none'
+        } else {
+            tile.style.display = ''
+        }
+    })
+    
+    localStorage.setItem('meetingTileCount', count)
+    console.log('🔢 Max tiles set to:', count)
+}
+
+function applyHideNoVideo(hide) {
+    const tiles = videoGrid.querySelectorAll('.video-tile:not(#tile-local)')
+    
+    tiles.forEach((tile) => {
+        if (hide && tile.classList.contains('video-off')) {
+            tile.style.display = 'none'
+        } else {
+            tile.style.display = ''
+        }
+    })
+    
+    localStorage.setItem('meetingHideNoVideo', hide)
+    console.log('👁️ Hide no video:', hide)
+}
+
+// Event listeners
+layoutRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            applyLayout(e.target.value)
+        }
+    })
+})
+
+tileCountSlider.addEventListener('input', (e) => {
+    tileCountValue.textContent = e.target.value
+    applyTileCount(e.target.value)
+})
+
+tileCountMin.addEventListener('click', () => {
+    tileCountSlider.value = tileCountSlider.min
+    tileCountValue.textContent = tileCountSlider.min
+    applyTileCount(tileCountSlider.min)
+})
+
+tileCountMax.addEventListener('click', () => {
+    tileCountSlider.value = tileCountSlider.max
+    tileCountValue.textContent = tileCountSlider.max
+    applyTileCount(tileCountSlider.max)
+})
+
+hideNoVideoCheckbox.addEventListener('change', (e) => {
+    applyHideNoVideo(e.target.checked)
+})
+
+// Apply saved settings on load
+applyLayout(savedLayout)
+applyTileCount(savedTileCount)
+applyHideNoVideo(savedHideNoVideo)
 
 // Helpers
 function getLocalVideoEnabled() {

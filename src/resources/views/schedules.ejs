@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch họp - MINIGGMeet</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .schedule-card {
+      border-left: 4px solid #0d6efd;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .schedule-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .schedule-card.cancelled {
+      border-left-color: #dc3545;
+      opacity: 0.7;
+    }
+    .schedule-card.completed {
+      border-left-color: #198754;
+    }
+    .participant-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-right: 4px;
+    }
+    .participant-badge.accepted { background: #d1e7dd; color: #0a3622; }
+    .participant-badge.declined { background: #f8d7da; color: #58151c; }
+    .participant-badge.pending { background: #fff3cd; color: #664d03; }
+    .recurrence-badge {
+      background: #e7f1ff;
+      color: #084298;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <i class="bi bi-camera-video"></i> MINIGGMeet
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> Trang chủ</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/schedules"><i class="bi bi-calendar"></i> Lịch họp</a></li>
+          <li class="nav-item"><a class="nav-link" href="/friends"><i class="bi bi-people"></i> Bạn bè</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row">
+      <!-- Left Panel: Create Schedule -->
+      <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Tạo lịch họp mới</h5>
+          </div>
+          <div class="card-body">
+            <form id="createScheduleForm">
+              <div class="mb-3">
+                <label class="form-label">Tiêu đề *</label>
+                <input type="text" class="form-control" id="title" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Mô tả</label>
+                <textarea class="form-control" id="description" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Thời gian bắt đầu *</label>
+                <input type="datetime-local" class="form-control" id="startTime" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Thời lượng (phút) *</label>
+                <input type="number" class="form-control" id="duration" value="60" min="15" max="1440" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Lặp lại</label>
+                <select class="form-select" id="recurrenceType">
+                  <option value="none">Không lặp</option>
+                  <option value="daily">Hàng ngày</option>
+                  <option value="weekly">Hàng tuần</option>
+                  <option value="monthly">Hàng tháng</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Múi giờ</label>
+                <select class="form-select" id="timezone">
+                  <option value="Asia/Ho_Chi_Minh">Việt Nam (UTC+7)</option>
+                  <option value="Asia/Bangkok">Bangkok (UTC+7)</option>
+                  <option value="Asia/Tokyo">Tokyo (UTC+9)</option>
+                  <option value="America/New_York">New York (UTC-5)</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Người tham gia (email, cách nhau bởi dấu phẩy)</label>
+                <input type="text" class="form-control" id="participants" placeholder="user@example.com, user2@example.com">
+              </div>
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-calendar-plus"></i> Tạo lịch họp
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Upcoming Schedules -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Sắp diễn ra</h5>
+          </div>
+          <div class="card-body" id="upcomingSchedules">
+            <p class="text-muted text-center">Đang tải...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: All Schedules -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Tất cả lịch họp</h5>
+            <div class="btn-group">
+              <button class="btn btn-sm btn-outline-primary" data-filter="all">Tất cả</button>
+              <button class="btn btn-sm btn-outline-primary" data-filter="scheduled">Đã lên lịch</button>
+              <button class="btn btn-sm btn-outline-success" data-filter="completed">Hoàn thành</button>
+              <button class="btn btn-sm btn-outline-danger" data-filter="cancelled">Đã hủy</button>
+            </div>
+          </div>
+          <div class="card-body" id="allSchedules">
+            <p class="text-muted text-center">Đang tải lịch họp...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Schedule Detail Modal -->
+  <div class="modal fade" id="scheduleDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="scheduleDetailTitle"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="scheduleDetailBody"></div>
+        <div class="modal-footer" id="scheduleDetailFooter"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api/schedule.api.js"></script>
+  <script>
+    let allSchedulesData = []
+    let currentFilter = 'all'
+
+    // Load all schedules
+    async function loadSchedules() {
+      try {
+        const schedules = await scheduleAPI.getSchedules()
+        allSchedulesData = schedules
+        renderSchedules()
+      } catch (err) {
+        document.getElementById('allSchedules').innerHTML = 
+          `<div class="alert alert-danger">Lỗi tải lịch: ${err.message}</div>`
+      }
+    }
+
+    // Load upcoming schedules
+    async function loadUpcoming() {
+      try {
+        const schedules = await scheduleAPI.getUpcoming()
+        renderUpcoming(schedules)
+      } catch (err) {
+        document.getElementById('upcomingSchedules').innerHTML = 
+          `<div class="alert alert-danger">Lỗi: ${err.message}</div>`
+      }
+    }
+
+    // Render schedules
+    function renderSchedules() {
+      const container = document.getElementById('allSchedules')
+      let filtered = allSchedulesData
+      
+      if (currentFilter !== 'all') {
+        filtered = allSchedulesData.filter(s => s.status === currentFilter)
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">Không có lịch họp nào</p>'
+        return
+      }
+
+      container.innerHTML = filtered.map(schedule => `
+        <div class="schedule-card card mb-3 ${schedule.status}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="card-title">${schedule.title}</h6>
+                <p class="card-text text-muted small mb-2">${schedule.description || 'Không có mô tả'}</p>
+                <div class="mb-2">
+                  <i class="bi bi-clock"></i> ${new Date(schedule.startTime).toLocaleString('vi-VN')}
+                  <span class="badge bg-secondary ms-2">${schedule.duration} phút</span>
+                  ${schedule.recurrence.type !== 'none' ? `<span class="recurrence-badge ms-2"><i class="bi bi-arrow-repeat"></i> ${schedule.recurrence.type}</span>` : ''}
+                </div>
+                <div>
+                  <i class="bi bi-people"></i> ${schedule.participants.length} người
+                  ${schedule.participants.slice(0, 3).map(p => 
+                    `<span class="participant-badge ${p.status}">${p.email.split('@')[0]}</span>`
+                  ).join('')}
+                  ${schedule.participants.length > 3 ? `<span class="text-muted small">+${schedule.participants.length - 3}</span>` : ''}
+                </div>
+              </div>
+              <div>
+                <span class="badge bg-${schedule.status === 'scheduled' ? 'primary' : schedule.status === 'completed' ? 'success' : 'danger'}">
+                  ${schedule.status === 'scheduled' ? 'Đã lên lịch' : schedule.status === 'completed' ? 'Hoàn thành' : 'Đã hủy'}
+                </span>
+              </div>
+            </div>
+            <div class="mt-3">
+              <button class="btn btn-sm btn-outline-primary" onclick="viewSchedule('${schedule._id}')">
+                <i class="bi bi-eye"></i> Chi tiết
+              </button>
+              ${schedule.status === 'scheduled' ? `
+                <button class="btn btn-sm btn-outline-success" onclick="respondToSchedule('${schedule._id}', 'accepted')">
+                  <i class="bi bi-check-circle"></i> Chấp nhận
+                </button>
+                <button class="btn btn-sm btn-outline-warning" onclick="respondToSchedule('${schedule._id}', 'tentative')">
+                  <i class="bi bi-question-circle"></i> Chưa chắc
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="cancelSchedulePrompt('${schedule._id}')">
+                  <i class="bi bi-x-circle"></i> Hủy
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('')
+    }
+
+    // Render upcoming
+    function renderUpcoming(schedules) {
+      const container = document.getElementById('upcomingSchedules')
+      if (schedules.length === 0) {
+        container.innerHTML = '<p class="text-muted small text-center">Không có lịch sắp tới</p>'
+        return
+      }
+      container.innerHTML = schedules.map(s => `
+        <div class="alert alert-info mb-2 py-2 small">
+          <strong>${s.title}</strong><br>
+          <i class="bi bi-clock"></i> ${new Date(s.startTime).toLocaleString('vi-VN', {hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit'})}
+        </div>
+      `).join('')
+    }
+
+    // Create schedule
+    document.getElementById('createScheduleForm').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const participants = document.getElementById('participants').value
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email.length > 0)
+        .map(email => ({ email, status: 'pending' }))
+
+      const scheduleData = {
+        title: document.getElementById('title').value.trim(),
+        description: document.getElementById('description').value.trim(),
+        scheduledStartTime: new Date(document.getElementById('startTime').value),
+        duration: parseInt(document.getElementById('duration').value),
+        scheduledEndTime: (() => {
+          const start = new Date(document.getElementById('startTime').value)
+          const durationMinutes = parseInt(document.getElementById('duration').value)
+          const end = new Date(start.getTime() + durationMinutes * 60000)
+          return end
+        })(),
+        recurrence: { 
+          enabled: document.getElementById('recurrenceType').value !== 'none',
+          pattern: document.getElementById('recurrenceType').value,
+          interval: 1
+        },
+        timezone: document.getElementById('timezone').value || 'Asia/Ho_Chi_Minh',
+        participants: participants.map(p => ({
+          email: p.email,
+          user: p.userId
+        }))
+      }
+
+      // Validate required fields
+      if (!scheduleData.title) {
+        alert('Vui lòng nhập tiêu đề cuộc họp')
+        return
+      }
+
+      if (!scheduleData.scheduledStartTime) {
+        alert('Vui lòng chọn thời gian bắt đầu')
+        return
+      }
+
+      if (!scheduleData.duration || scheduleData.duration < 5 || scheduleData.duration > 480) {
+        alert('Thời lượng phải từ 5 đến 480 phút')
+        return
+      }
+
+      // Validate start time not in past
+      if (scheduleData.scheduledStartTime < new Date()) {
+        alert('Không thể tạo lịch họp trong quá khứ')
+        return
+      }
+
+      try {
+        const result = await scheduleAPI.createSchedule(scheduleData)
+        alert('Tạo lịch họp thành công!')
+        document.getElementById('createScheduleForm').reset()
+        loadSchedules()
+        loadUpcoming()
+      } catch (err) {
+        console.error('Schedule creation error:', err)
+        alert('Lỗi: ' + (err.message || 'Không thể tạo lịch họp'))
+      }
+    })
+
+    // Filter schedules
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'))
+        e.target.classList.add('active')
+        currentFilter = e.target.dataset.filter
+        renderSchedules()
+      })
+    })
+
+    // View schedule detail
+    async function viewSchedule(scheduleId) {
+      try {
+        const schedule = await scheduleAPI.getScheduleById(scheduleId)
+        document.getElementById('scheduleDetailTitle').textContent = schedule.title
+        document.getElementById('scheduleDetailBody').innerHTML = `
+          <p><strong>Mô tả:</strong> ${schedule.description || 'Không có'}</p>
+          <p><strong>Thời gian:</strong> ${new Date(schedule.startTime).toLocaleString('vi-VN')}</p>
+          <p><strong>Thời lượng:</strong> ${schedule.duration} phút</p>
+          <p><strong>Múi giờ:</strong> ${schedule.timezone}</p>
+          <p><strong>Trạng thái:</strong> <span class="badge bg-primary">${schedule.status}</span></p>
+          <hr>
+          <h6>Người tham gia:</h6>
+          ${schedule.participants.map(p => `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span>${p.email}</span>
+              <span class="participant-badge ${p.status}">${p.status}</span>
+            </div>
+          `).join('')}
+        `
+        new bootstrap.Modal(document.getElementById('scheduleDetailModal')).show()
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Respond to schedule
+    async function respondToSchedule(scheduleId, response) {
+      try {
+        await scheduleAPI.respondToInvitation(scheduleId, response)
+        alert('Đã phản hồi!')
+        loadSchedules()
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Cancel schedule
+    async function cancelSchedulePrompt(scheduleId) {
+      const reason = prompt('Lý do hủy (tùy chọn):')
+      if (reason === null) return
+      try {
+        await scheduleAPI.cancelSchedule(scheduleId, reason)
+        alert('Đã hủy lịch họp!')
+        loadSchedules()
+        loadUpcoming()
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Initialize
+    loadSchedules()
+    loadUpcoming()
+  </script>
+</body>
+</html>
