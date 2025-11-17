@@ -1,10 +1,6 @@
-// User/Friends Controllers
 const userService = require('../../services/user.service')
 const ApiResponse = require('../../../../utils/response.util')
 
-/**
- * Get current user profile with friends
- */
 exports.getProfile = async (req, res, next) => {
   try {
     const userId = req.user.id
@@ -16,9 +12,6 @@ exports.getProfile = async (req, res, next) => {
   }
 }
 
-/**
- * Get user's friends list
- */
 exports.getFriends = async (req, res, next) => {
   try {
     const userId = req.user.id
@@ -33,9 +26,6 @@ exports.getFriends = async (req, res, next) => {
   }
 }
 
-/**
- * Get user's friend requests
- */
 exports.getFriendRequests = async (req, res, next) => {
   try {
     const userId = req.user.id
@@ -50,9 +40,6 @@ exports.getFriendRequests = async (req, res, next) => {
   }
 }
 
-/**
- * Send friend request
- */
 exports.sendFriendRequest = async (req, res, next) => {
   try {
     const userId = req.user.id
@@ -66,9 +53,6 @@ exports.sendFriendRequest = async (req, res, next) => {
   }
 }
 
-/**
- * Accept friend request
- */
 exports.acceptFriendRequest = async (req, res, next) => {
   try {
     const userId = req.user.id
@@ -82,9 +66,6 @@ exports.acceptFriendRequest = async (req, res, next) => {
   }
 }
 
-/**
- * Reject friend request
- */
 exports.rejectFriendRequest = async (req, res, next) => {
   try {
     const userId = req.user.id
@@ -98,9 +79,6 @@ exports.rejectFriendRequest = async (req, res, next) => {
   }
 }
 
-/**
- * Remove friend
- */
 exports.removeFriend = async (req, res, next) => {
   try {
     const userId = req.user.id

@@ -1,4 +1,3 @@
-// User Service - Business logic for user operations
 const User = require('../../../models/User')
 const { NotFoundError, ConflictError } = require('../../../utils/error.util')
 

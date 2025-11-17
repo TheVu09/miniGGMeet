@@ -8,7 +8,7 @@ async function createSchedule(req, res, next) {
     
     const schedule = await meetingScheduleService.createSchedule(userId, scheduleData)
     
-    res.status(201).json(ApiResponse.success(schedule, 'Meeting scheduled successfully'))
+    return ApiResponse.created(res, schedule, 'Tao lịch họp thành công')
   } catch (error) {
     next(error)
   }
@@ -25,7 +25,7 @@ async function getUserSchedules(req, res, next) {
       endDate
     })
     
-    res.json(ApiResponse.success(schedules, 'Schedules retrieved successfully'))
+    return ApiResponse.success(res, schedules, 'Lấy lịch họp thành công')
   } catch (error) {
     next(error)
   }
@@ -38,7 +38,7 @@ async function getScheduleById(req, res, next) {
     
     const schedule = await meetingScheduleService.getScheduleById(scheduleId, userId)
     
-    res.json(ApiResponse.success(schedule, 'Schedule retrieved successfully'))
+    return ApiResponse.success(res, schedule, 'Lấy lịch họp thành công')
   } catch (error) {
     next(error)
   }
@@ -52,7 +52,7 @@ async function updateSchedule(req, res, next) {
     
     const schedule = await meetingScheduleService.updateSchedule(scheduleId, userId, updateData)
     
-    res.json(ApiResponse.success(schedule, 'Schedule updated successfully'))
+    return ApiResponse.success(res, schedule, 'Cập nhật lịch họp thành công')
   } catch (error) {
     next(error)
   }
@@ -66,7 +66,7 @@ async function cancelSchedule(req, res, next) {
     
     const schedule = await meetingScheduleService.cancelSchedule(scheduleId, userId, cancellationReason)
     
-    res.json(ApiResponse.success(schedule, 'Schedule cancelled successfully'))
+    return ApiResponse.success(res, schedule, 'Hủy lịch họp thành công')
   } catch (error) {
     next(error)
   }
@@ -80,7 +80,7 @@ async function respondToInvitation(req, res, next) {
     
     const schedule = await meetingScheduleService.respondToInvitation(scheduleId, userId, response)
     
-    res.json(ApiResponse.success(schedule, 'Response recorded successfully'))
+    return ApiResponse.success(res, schedule, 'Phản hồi lời mời thành công')
   } catch (error) {
     next(error)
   }
@@ -92,7 +92,7 @@ async function getUpcomingSchedules(req, res, next) {
     
     const schedules = await meetingScheduleService.getUpcomingSchedules(userId)
     
-    res.json(ApiResponse.success(schedules, 'Upcoming schedules retrieved successfully'))
+    return ApiResponse.success(res, schedules, 'Lấy lịch họp sắp tới thành công')
   } catch (error) {
     next(error)
   }

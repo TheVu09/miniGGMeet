@@ -3,16 +3,6 @@ const router = express.Router()
 const User = require('../../../models/User')
 const MeetingRoom = require('../../../models/MeetingRoom')
 
-/**
- * VIEW ROUTES
- * These routes only render EJS templates (Server-Side Rendering)
- * All POST actions use REST API at /api/v1/*
- */
-
-// ============================================
-// PUBLIC PAGES
-// ============================================
-
 // Home page
 router.get('/', (req, res) => {
 	const user = req.session.user || null
@@ -27,10 +17,6 @@ router.get('/auth/login', (req, res) => {
 router.get('/auth/register', (req, res) => {
 	res.render('auth-register')
 })
-
-// ============================================
-// AUTHENTICATED PAGES
-// ============================================
 
 // Middleware to check authentication
 const requireAuth = (req, res, next) => {

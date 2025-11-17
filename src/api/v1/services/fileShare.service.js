@@ -3,17 +3,17 @@ const MeetingRoom = require('../../../models/MeetingRoom')
 const { NotFoundError, ValidationError, ForbiddenError } = require('../../../utils/error.util')
 
 /**
- * Upload file to meeting
+ * Cập nhật tệp được chia sẻ trong cuộc họp
  */
 async function uploadFile({ meetingId, userId, fileData }) {
   const meeting = await MeetingRoom.findById(meetingId)
   if (!meeting) {
-    throw new NotFoundError('Meeting not found')
+    throw new NotFoundError('Cuộc họp không tồn tại')
   }
   
-  // Check if user is participant
+  // Kiểm tra nếu người dùng là người tham gia
   if (!meeting.participants.includes(userId) && meeting.host.toString() !== userId.toString()) {
-    throw new ForbiddenError('You are not a participant of this meeting')
+    throw new ForbiddenError('Bạn không phải là người tham gia của cuộc họp này')
   }
   
   const fileShare = await FileShare.create({
@@ -26,7 +26,7 @@ async function uploadFile({ meetingId, userId, fileData }) {
 }
 
 /**
- * Get meeting files
+ * Lấy các tệp trong cuộc họp
  */
 async function getMeetingFiles(meetingId, userId) {
   const meeting = await MeetingRoom.findById(meetingId)
@@ -34,9 +34,9 @@ async function getMeetingFiles(meetingId, userId) {
     throw new NotFoundError('Meeting not found')
   }
   
-  // Check if user is participant
+  // Kiểm tra nếu người dùng là người tham gia
   if (!meeting.participants.includes(userId) && meeting.host.toString() !== userId.toString()) {
-    throw new ForbiddenError('You are not a participant of this meeting')
+    throw new ForbiddenError('Bạn không phải là người tham gia của cuộc họp này')
   }
   
   const files = await FileShare.find({ meeting: meetingId, isDeleted: false })
@@ -47,22 +47,22 @@ async function getMeetingFiles(meetingId, userId) {
 }
 
 /**
- * Download file (increment counter)
+ * Tải xuống tệp (tăng bộ đếm)
  */
 async function downloadFile(fileId, userId) {
   const file = await FileShare.findById(fileId).populate('meeting')
   if (!file) {
-    throw new NotFoundError('File not found')
+    throw new NotFoundError('Tệp không tồn tại')
   }
   
   if (file.isDeleted) {
-    throw new ValidationError('File has been deleted')
+    throw new ValidationError('Tệp đã bị xóa')
   }
   
-  // Check if user has access
+  // Kiểm tra nếu người dùng có quyền truy cập
   const meeting = file.meeting
   if (!meeting.participants.includes(userId) && meeting.host.toString() !== userId.toString()) {
-    throw new ForbiddenError('You do not have access to this file')
+    throw new ForbiddenError('Bạn không có quyền truy cập tệp này')
   }
   
   file.downloadCount += 1
@@ -72,18 +72,18 @@ async function downloadFile(fileId, userId) {
 }
 
 /**
- * Delete file
+ * Xóa tệp
  */
 async function deleteFile(fileId, userId) {
   const file = await FileShare.findById(fileId).populate('meeting')
   if (!file) {
-    throw new NotFoundError('File not found')
+    throw new NotFoundError('Tệp không tồn tại')
   }
   
-  // Check if user is uploader or host
+  // Kiểm tra nếu người dùng là người tải lên hoặc chủ trì cuộc họp
   const meeting = file.meeting
   if (file.uploader.toString() !== userId.toString() && meeting.host.toString() !== userId.toString()) {
-    throw new ForbiddenError('Only the uploader or meeting host can delete this file')
+    throw new ForbiddenError('Chỉ người tải lên hoặc chủ trì cuộc họp mới có thể xóa tệp này')
   }
   
   file.isDeleted = true

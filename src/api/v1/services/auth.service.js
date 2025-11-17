@@ -1,4 +1,3 @@
-// Authentication Service - Business Logic
 const bcrypt = require('bcryptjs')
 const User = require('../../../models/User')
 const { UnauthorizedError, ConflictError, NotFoundError } = require('../../../utils/error.util')

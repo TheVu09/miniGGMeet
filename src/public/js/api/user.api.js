@@ -57,6 +57,7 @@ class UserAPI {
    * @param {string} email - Target user email
    * @returns {Promise<void>}
    */
+  
   async sendFriendRequest(email) {
     const response = await fetch(`${this.baseURL}/friend-requests`, {
       method: 'POST',
@@ -80,6 +81,7 @@ class UserAPI {
    * @param {string} requesterId 
    * @returns {Promise<void>}
    */
+
   async acceptFriendRequest(requesterId) {
     const response = await fetch(`${this.baseURL}/friend-requests/accept`, {
       method: 'POST',

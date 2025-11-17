@@ -14,7 +14,7 @@ async function createBreakoutRooms(req, res, next) {
       capacity
     })
     
-    return ApiResponse.created(res, rooms, 'Breakout rooms created successfully')
+    return ApiResponse.created(res, rooms, 'Phòng breakout được tạo thành công')
   } catch (error) {
     next(error)
   }
@@ -28,7 +28,7 @@ async function assignParticipant(req, res, next) {
     
     const room = await breakoutRoomService.assignParticipant(roomId, userId, participantId)
     
-    return ApiResponse.success(res, room, 'Participant assigned successfully')
+    return ApiResponse.success(res, room, 'Người tham gia được phân công thành công')
   } catch (error) {
     next(error)
   }
@@ -41,7 +41,7 @@ async function joinBreakoutRoom(req, res, next) {
     
     const room = await breakoutRoomService.joinBreakoutRoom(roomId, userId)
     
-    return ApiResponse.success(res, room, 'Joined breakout room successfully')
+    return ApiResponse.success(res, room, 'Tham gia phòng breakout thành công')
   } catch (error) {
     next(error)
   }
@@ -54,7 +54,7 @@ async function leaveBreakoutRoom(req, res, next) {
     
     const room = await breakoutRoomService.leaveBreakoutRoom(roomId, userId)
     
-    return ApiResponse.success(res, room, 'Left breakout room successfully')
+    return ApiResponse.success(res, room, 'Rời khỏi phòng breakout thành công')
   } catch (error) {
     next(error)
   }
@@ -67,7 +67,7 @@ async function getMeetingBreakoutRooms(req, res, next) {
     
     const rooms = await breakoutRoomService.getMeetingBreakoutRooms(meetingId, userId)
     
-    return ApiResponse.success(res, rooms, 'Breakout rooms retrieved successfully')
+    return ApiResponse.success(res, rooms, 'Phòng breakout được lấy thành công')
   } catch (error) {
     next(error)
   }
@@ -80,7 +80,7 @@ async function startBreakoutRooms(req, res, next) {
     
     const result = await breakoutRoomService.startBreakoutRooms(meetingId, userId)
     
-    return ApiResponse.success(res, result, 'Breakout rooms started successfully')
+    return ApiResponse.success(res, result, 'Phòng breakout được bắt đầu thành công')
   } catch (error) {
     next(error)
   }
@@ -93,7 +93,7 @@ async function closeBreakoutRoom(req, res, next) {
     
     const room = await breakoutRoomService.closeBreakoutRoom(roomId, userId)
     
-    return ApiResponse.success(res, room, 'Breakout room closed successfully')
+    return ApiResponse.success(res, room, 'Phòng breakout được đóng thành công')
   } catch (error) {
     next(error)
   }
@@ -106,7 +106,7 @@ async function closeAllBreakoutRooms(req, res, next) {
     
     const result = await breakoutRoomService.closeAllBreakoutRooms(meetingId, userId)
     
-    return ApiResponse.success(res, result, 'All breakout rooms closed successfully')
+    return ApiResponse.success(res, result, 'Tất cả phòng breakout được đóng thành công')
   } catch (error) {
     next(error)
   }

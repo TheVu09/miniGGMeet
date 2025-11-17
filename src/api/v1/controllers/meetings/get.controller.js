@@ -1,4 +1,3 @@
-// Get Meeting Details Controller
 const meetingService = require('../../services/meeting.service')
 const ApiResponse = require('../../../../utils/response.util')
 
@@ -8,7 +7,7 @@ exports.getMeeting = async (req, res, next) => {
     
     const meeting = await meetingService.getMeetingByCode(code)
     
-    return ApiResponse.success(res, { meeting }, 'Meeting retrieved successfully')
+    return ApiResponse.success(res, { meeting }, 'Cuộc họp được lấy thành công')
   } catch (error) {
     next(error)
   }

@@ -1,15 +1,12 @@
 const fileShareService = require('../../services/fileShare.service')
 const ApiResponse = require('../../../../utils/response.util')
 
-// Note: File upload will be handled by multer middleware
-// This assumes fileData comes from multer
 
 async function uploadFile(req, res, next) {
   try {
     const userId = req.session.user.id
     const { meetingId } = req.params
     
-    // File data from multer
     const file = req.file
     if (!file) {
       return res.status(400).json(ApiResponse.error('No file uploaded', 400))
@@ -93,7 +90,6 @@ async function getUserFiles(req, res, next) {
   }
 }
 
-// Helper function to determine file type
 function getFileType(mimeType) {
   if (mimeType.startsWith('image/')) return 'image'
   if (mimeType.startsWith('video/')) return 'video'

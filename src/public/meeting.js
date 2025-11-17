@@ -268,10 +268,50 @@ async function initMedia() {
 
 function createPeer(id, isInitiator) {
     console.log('🚀 Creating peer connection for:', id, 'isInitiator:', isInitiator)
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
+    const pc = new RTCPeerConnection({ 
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' }
+        ],
+        iceTransportPolicy: 'all',
+        bundlePolicy: 'max-bundle',
+        rtcpMuxPolicy: 'require',
+        sdpSemantics: 'unified-plan'
+    })
     state.pcPeers[id] = pc
     
     let makingOffer = false
+    
+    // Thêm log cho trạng thái kết nối
+    pc.onconnectionstatechange = () => {
+        console.log(`📡 Peer ${id} connection state:`, pc.connectionState)
+    }
+    
+    pc.oniceconnectionstatechange = () => {
+        console.log(`🧊 Peer ${id} ICE connection state:`, pc.iceConnectionState)
+    }
+    
+    pc.onsignalingstatechange = () => {
+        console.log(`🤝 Peer ${id} signaling state:`, pc.signalingState)
+    }
+    
+    pc.onicecandidate = (e) => {
+        if (e.candidate) {
+            console.log(`🧊 Sending ICE candidate to ${id}:`, {
+                type: e.candidate.type,
+                protocol: e.candidate.protocol,
+                address: e.candidate.address
+            })
+            socket.emit('webrtc:signal', { 
+                code, 
+                to: id, 
+                data: { candidate: e.candidate } 
+            })
+        }
+    }
     
     if (state.localStream) {
         const tracks = state.localStream.getTracks()
@@ -399,39 +439,294 @@ socket.on('meeting:raise-hand', ({ userId, displayName }) => {
 const screenBtn = document.getElementById('screenBtn')
 const screenIcon = screenBtn.querySelector('i')
 let sharing = false
+let screenTrackEndedHandler = null;
+
 screenBtn.addEventListener('click', async () => {
     if (!sharing) {
         try {
-            state.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
-            replaceTrack(state.screenStream.getVideoTracks()[0])
+            console.log('🖥️ Bắt đầu chia sẻ màn hình...')
+
+            // Kiểm tra xem đã có stream screen đang chạy không
+            if (state.screenStream) {
+                state.screenStream.getTracks().forEach(track => track.stop())
+            }
+
+            state.screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    cursor: "always",
+                    displaySurface: "monitor",
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    frameRate: { ideal: 30 }
+                },
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            })
+
+            const videoTrack = state.screenStream.getVideoTracks()[0]
+            if (!videoTrack) {
+                throw new Error('Không nhận được video track từ màn hình')
+            }
+
+            // Lưu trữ track gốc từ camera để khôi phục sau
+            if (!state.originalVideoTrack && state.localStream) {
+                state.originalVideoTrack = state.localStream.getVideoTracks()[0]
+            }
+
+            // Đánh dấu track là screen share
+            videoTrack.source = 'screen'
+
+            // Thay thế track trong tất cả các peer connection
+            const success = await replaceTrack(videoTrack)
+            if (!success) {
+                throw new Error('Không thể chia sẻ màn hình với người tham gia khác')
+            }
+
+            // Cập nhật UI
             sharing = true
             screenBtn.title = 'Dừng chia sẻ'
             screenBtn.setAttribute('aria-pressed', 'true')
-            if (screenIcon) screenIcon.className = 'bi bi-display'
-            state.screenStream.getVideoTracks()[0].addEventListener('ended', () => {
-                stopShare()
+            if (screenIcon) screenIcon.className = 'bi bi-display-fill'
+
+            // Thông báo cho người dùng khác
+            socket.emit('meeting:media', {
+                code,
+                userId: self.id,
+                displayName: self.displayName,
+                videoEnabled: true,
+                isScreenShare: true
             })
-        } catch (e) { }
+
+            // Xử lý khi người dùng dừng chia sẻ qua nút Stop sharing của trình duyệt
+            if (screenTrackEndedHandler) {
+                videoTrack.removeEventListener('ended', screenTrackEndedHandler)
+            }
+
+            screenTrackEndedHandler = async () => {
+                console.log('🛑 Người dùng đã dừng chia sẻ màn hình qua nút Stop sharing')
+                await stopShare()
+            }
+
+            videoTrack.addEventListener('ended', screenTrackEndedHandler)
+
+            // Kiểm tra track định kỳ
+            startScreenShareMonitoring()
+
+            addMessage('[Hệ thống] Bạn đã bắt đầu chia sẻ màn hình')
+        } catch (error) {
+            console.error('❌ Lỗi chia sẻ màn hình:', error)
+            if (error.name === 'NotAllowedError') {
+                addMessage('[Thông báo] Bạn đã hủy chia sẻ màn hình')
+            } else {
+                addMessage('[Lỗi] Không thể chia sẻ màn hình: ' + (error.message || 'Đã có lỗi xảy ra'))
+            }
+            await stopShare()
+        }
     } else {
-        stopShare()
+        await stopShare()
     }
 })
 
-function stopShare() {
-    replaceTrack(state.localStream.getVideoTracks()[0])
-    state.screenStream?.getTracks().forEach((t) => t.stop())
-    state.screenStream = null
-    sharing = false
-    screenBtn.title = 'Chia sẻ màn hình'
-    screenBtn.setAttribute('aria-pressed', 'false')
-    if (screenIcon) screenIcon.className = 'bi bi-display'
+// Biến để theo dõi trạng thái screen share
+let screenShareMonitorInterval = null;
+
+function startScreenShareMonitoring() {
+    if (screenShareMonitorInterval) {
+        clearInterval(screenShareMonitorInterval)
+    }
+    
+    screenShareMonitorInterval = setInterval(() => {
+        if (sharing && (!state.screenStream || !state.screenStream.active || state.screenStream.getVideoTracks()[0]?.readyState === 'ended')) {
+            console.log('🔍 Phát hiện screen share đã dừng qua monitoring')
+            stopShare()
+        }
+    }, 1000)
 }
 
-function replaceTrack(track) {
-    Object.values(state.pcPeers).forEach((pc) => {
-        const sender = pc.getSenders().find((s) => s.track && s.track.kind === 'video')
-        if (sender) sender.replaceTrack(track)
-    })
+function stopScreenShareMonitoring() {
+    if (screenShareMonitorInterval) {
+        clearInterval(screenShareMonitorInterval)
+        screenShareMonitorInterval = null
+    }
+}
+
+async function stopShare() {
+    try {
+        console.log('🛑 Dừng chia sẻ màn hình...')
+        
+        // Dừng monitoring
+        stopScreenShareMonitoring()
+        
+        // Dừng tất cả các track của screen share
+        if (state.screenStream) {
+            state.screenStream.getTracks().forEach(track => {
+                track.stop()
+                console.log('✅ Đã dừng track screen share:', track.kind)
+            })
+            state.screenStream = null
+        }
+
+        // Khôi phục track camera gốc
+        if (state.originalVideoTrack) {
+            console.log('🎥 Khôi phục track camera...')
+            state.originalVideoTrack.source = 'camera'
+            
+            try {
+                await replaceTrack(state.originalVideoTrack)
+                console.log('✅ Đã khôi phục track camera thành công')
+            } catch (trackError) {
+                console.error('❌ Lỗi khôi phục track camera:', trackError)
+                // Thử khởi tạo lại camera nếu khôi phục thất bại
+                try {
+                    const newStream = await navigator.mediaDevices.getUserMedia({ video: true })
+                    const newVideoTrack = newStream.getVideoTracks()[0]
+                    newVideoTrack.source = 'camera'
+                    await replaceTrack(newVideoTrack)
+                    state.originalVideoTrack = newVideoTrack
+                    console.log('✅ Đã khởi tạo lại camera thành công')
+                } catch (newStreamError) {
+                    console.error('❌ Không thể khởi tạo lại camera:', newStreamError)
+                }
+            }
+        }
+
+        // Cập nhật trạng thái và UI
+        sharing = false
+        screenBtn.title = 'Chia sẻ màn hình'
+        screenBtn.setAttribute('aria-pressed', 'false')
+        if (screenIcon) screenIcon.className = 'bi bi-display'
+
+        // Thông báo cho người dùng khác
+        socket.emit('meeting:media', {
+            code,
+            userId: self.id,
+            displayName: self.displayName,
+            videoEnabled: getLocalVideoEnabled(),
+            isScreenShare: false
+        })
+
+        // Xóa event listener
+        if (screenTrackEndedHandler && state.screenStream?.getVideoTracks()[0]) {
+            state.screenStream.getVideoTracks()[0].removeEventListener('ended', screenTrackEndedHandler)
+            screenTrackEndedHandler = null
+        }
+
+        addMessage('[Hệ thống] Bạn đã dừng chia sẻ màn hình')
+    } catch (error) {
+        console.error('❌ Lỗi khi dừng chia sẻ màn hình:', error)
+        addMessage('[Lỗi] Không thể dừng chia sẻ màn hình hoàn toàn: ' + (error.message || 'Đã có lỗi xảy ra'))
+        // Reset trạng thái mặc dù có lỗi
+        sharing = false
+        state.screenStream = null
+    }
+}
+
+async function replaceTrack(track) {
+    try {
+        console.log('🔄 Thay thế video track:', {
+            kind: track.kind,
+            enabled: track.enabled,
+            source: track.source,
+            readyState: track.readyState,
+            muted: track.muted
+        })
+
+        // Cập nhật local video trước
+        if (track.source === 'screen') {
+            localVideo.srcObject = state.screenStream;
+        } else {
+            localVideo.srcObject = state.localStream;
+        }
+
+        // Đảm bảo local video chạy
+        try {
+            await localVideo.play();
+            console.log('✅ Đã cập nhật local video thành công');
+        } catch (playError) {
+            console.warn('⚠️ Lỗi khi play local video:', playError);
+        }
+
+        let success = false;
+        const peers = Object.entries(state.pcPeers);
+        
+        if (peers.length === 0) {
+            console.log('⚠️ Không có peer connections nào để thay thế track');
+            return true; // Vẫn trả về true vì không có peer không phải là lỗi
+        }
+
+        for (const [peerId, pc] of peers) {
+            try {
+                console.log(`🔄 Đang xử lý peer ${peerId}:`, {
+                    connectionState: pc.connectionState,
+                    iceConnectionState: pc.iceConnectionState,
+                    signalingState: pc.signalingState
+                });
+
+                // Kiểm tra trạng thái kết nối
+                if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                    console.log(`⚠️ Bỏ qua peer ${peerId} do trạng thái không hợp lệ`);
+                    continue;
+                }
+
+                const senders = pc.getSenders();
+                const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+
+                if (!videoSender) {
+                    console.log(`⚠️ Không tìm thấy video sender cho peer ${peerId}`);
+                    // Thử thêm track mới nếu không tìm thấy sender
+                    try {
+                        pc.addTrack(track, track.source === 'screen' ? state.screenStream : state.localStream);
+                        console.log(`✅ Đã thêm track mới cho peer ${peerId}`);
+                        success = true;
+                    } catch (addError) {
+                        console.error(`❌ Lỗi khi thêm track mới cho peer ${peerId}:`, addError);
+                    }
+                    continue;
+                }
+
+                // Thay thế track
+                await videoSender.replaceTrack(track);
+                console.log(`✅ Đã thay thế track thành công cho peer ${peerId}`);
+                success = true;
+
+                // Thử negotiate lại nếu cần
+                if (pc.signalingState === 'stable' && track.source === 'screen') {
+                    try {
+                        await pc.setLocalDescription(await pc.createOffer());
+                        console.log(`✅ Đã tạo offer mới cho peer ${peerId}`);
+                    } catch (negotiationError) {
+                        console.warn(`⚠️ Lỗi khi negotiate với peer ${peerId}:`, negotiationError);
+                    }
+                }
+
+            } catch (err) {
+                console.error(`❌ Lỗi xử lý peer ${peerId}:`, err);
+                // Tiếp tục với peer tiếp theo
+            }
+        }
+
+        // Cập nhật UI
+        const localTile = document.getElementById('tile-local');
+        if (localTile) {
+            if (track.source === 'screen') {
+                localTile.classList.add('screen-sharing');
+            } else {
+                localTile.classList.remove('screen-sharing');
+            }
+        }
+
+        if (!success) {
+            throw new Error('Không thể thay thế track cho bất kỳ peer nào');
+        }
+
+        return true;
+    } catch (error) {
+        console.error('❌ Lỗi thay thế track:', error);
+        throw error; // Ném lỗi để hàm gọi có thể xử lý
+    }
 }
 
 // Toggle mic/cam

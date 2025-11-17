@@ -37,13 +37,5 @@ npm run dev
 
 Mở http://localhost:3000
 
-## Lưu ý
-- WebRTC hiện là mesh nên phù hợp nhóm nhỏ (vài chục). Để đạt 150 người, cần MCU/SFU (ví dụ mediasoup, Janus) hoặc tối thiểu Selective Forwarding Unit.
-- Ghi hình là ghi cục bộ phía client.
-- Đồng bộ YouTube mức cơ bản (load/pause). Có thể nâng cấp thêm seek/sync thời gian.
 
-## Lộ trình nâng cấp
-- Xác thực đầy đủ, mô hình Server/Channel/Permission như Discord.
-- Tin nhắn riêng (DM), danh sách bạn bè và kết bạn.
-- Hạ tầng SFU cho phòng họp lớn và chất lượng cao.
-- Lưu trữ ghi hình server-side.
+

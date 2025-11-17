@@ -1,4 +1,3 @@
-// API v1 routes aggregator
 const express = require('express')
 const router = express.Router()
 

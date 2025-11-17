@@ -1,4 +1,3 @@
-// Error handling middleware
 const { ApiError } = require('../../../utils/error.util')
 
 const errorHandler = (err, req, res, next) => {
@@ -6,7 +5,6 @@ const errorHandler = (err, req, res, next) => {
   let message = err.message || 'Internal Server Error'
   let code = err.code || 'INTERNAL_ERROR'
 
-  // Mongoose validation error
   if (err.name === 'ValidationError') {
     statusCode = 422
     code = 'VALIDATION_ERROR'
@@ -22,7 +20,6 @@ const errorHandler = (err, req, res, next) => {
     })
   }
 
-  // Mongoose duplicate key error
   if (err.code === 11000) {
     statusCode = 409
     code = 'DUPLICATE_ERROR'
@@ -30,16 +27,14 @@ const errorHandler = (err, req, res, next) => {
     message = `${field} already exists`
   }
 
-  // Mongoose cast error
   if (err.name === 'CastError') {
     statusCode = 400
     code = 'INVALID_ID'
     message = `Invalid ${err.path}: ${err.value}`
   }
 
-  // Always log errors in development or when they're 500s
   if (process.env.NODE_ENV === 'development' || statusCode === 500) {
-    console.error('❌ Error:', {
+    console.error(' Error:', {
       code,
       message,
       stack: err.stack,
@@ -47,7 +42,6 @@ const errorHandler = (err, req, res, next) => {
     })
   }
 
-  // Send error response
   res.status(statusCode).json({
     success: false,
     error: {
@@ -61,7 +55,6 @@ const errorHandler = (err, req, res, next) => {
   })
 }
 
-// 404 handler
 const notFound = (req, res, next) => {
   res.status(404).json({
     success: false,

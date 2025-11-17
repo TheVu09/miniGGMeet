@@ -3,25 +3,25 @@ const MeetingRoom = require('../../../models/MeetingRoom')
 const { NotFoundError, ValidationError, ForbiddenError } = require('../../../utils/error.util')
 
 /**
- * Assign role to user
+ * Cấp vai trò cho người dùng trong cuộc họp
  */
 async function assignRole(meetingId, userId, targetUserId, role, customPermissions = null) {
   const meeting = await MeetingRoom.findById(meetingId)
   if (!meeting) {
-    throw new NotFoundError('Meeting not found')
+    throw new NotFoundError('Cuộc họp không tồn tại')
   }
   
-  // Check if assigner is host or has canManageRoles permission
+  // Kiểm tra nếu người gán vai trò là chủ trì hoặc có quyền canManageRoles
   if (meeting.host.toString() !== userId.toString()) {
     const assignerRole = await RolePermission.findOne({ meeting: meetingId, user: userId })
     if (!assignerRole || !assignerRole.permissions.canManageRoles) {
-      throw new ForbiddenError('You do not have permission to assign roles')
+      throw new ForbiddenError('Bạn không có quyền cấp vai trò')
     }
   }
   
-  // Check if target user is participant
+  // Kiểm tra nếu người dùng mục tiêu là người tham gia
   if (!meeting.participants.includes(targetUserId) && meeting.host.toString() !== targetUserId.toString()) {
-    throw new ValidationError('Target user is not a participant of this meeting')
+    throw new ValidationError('Người dùng mục tiêu không phải là người tham gia cuộc họp này')
   }
   
   // Find or create role
@@ -40,7 +40,7 @@ async function assignRole(meetingId, userId, targetUserId, role, customPermissio
     rolePermission.assignedAt = new Date()
   }
   
-  // Apply custom permissions if provided
+  // Áp dụng quyền tùy chỉnh nếu được cung cấp
   if (customPermissions) {
     Object.assign(rolePermission.permissions, customPermissions)
   }
@@ -54,7 +54,7 @@ async function assignRole(meetingId, userId, targetUserId, role, customPermissio
 }
 
 /**
- * Get user role and permissions in meeting
+ * Lấy vai trò và quyền của người dùng trong cuộc họp
  */
 async function getUserRole(meetingId, userId) {
   const meeting = await MeetingRoom.findById(meetingId)
@@ -62,7 +62,7 @@ async function getUserRole(meetingId, userId) {
     throw new NotFoundError('Meeting not found')
   }
   
-  // Check if user is host
+  // Kiểm tra nếu người dùng là người tham gia
   if (meeting.host.toString() === userId.toString()) {
     return {
       role: 'host',
@@ -97,7 +97,7 @@ async function getUserRole(meetingId, userId) {
     .populate('user', 'displayName email')
   
   if (!rolePermission) {
-    // Default participant role
+    // Vai trò mặc định của người tham gia
     return {
       role: 'participant',
       permissions: {
@@ -116,17 +116,17 @@ async function getUserRole(meetingId, userId) {
 }
 
 /**
- * Get all roles in meeting
+ * Lấy tất cả vai trò trong cuộc họp
  */
 async function getMeetingRoles(meetingId, userId) {
   const meeting = await MeetingRoom.findById(meetingId)
   if (!meeting) {
-    throw new NotFoundError('Meeting not found')
+    throw new NotFoundError('Cuộc họp không tồn tại')
   }
   
-  // Check if user is participant
+  // Kiểm tra nếu người dùng là người tham gia
   if (!meeting.participants.includes(userId) && meeting.host.toString() !== userId.toString()) {
-    throw new ForbiddenError('You are not a participant of this meeting')
+    throw new ForbiddenError('Bạn không phải là người tham gia cuộc họp này')
   }
   
   const roles = await RolePermission.find({ meeting: meetingId })
@@ -138,25 +138,25 @@ async function getMeetingRoles(meetingId, userId) {
 }
 
 /**
- * Update custom permissions
+ * Cập nhật quyền tùy chỉnh
  */
 async function updatePermissions(meetingId, userId, targetUserId, permissions) {
   const meeting = await MeetingRoom.findById(meetingId)
   if (!meeting) {
-    throw new NotFoundError('Meeting not found')
+    throw new NotFoundError('Cuộc họp không tồn tại')
   }
   
-  // Check if updater is host or has canManageRoles permission
+  // Kiểm tra nếu người cập nhật là người tổ chức hoặc có quyền canManageRoles
   if (meeting.host.toString() !== userId.toString()) {
     const updaterRole = await RolePermission.findOne({ meeting: meetingId, user: userId })
     if (!updaterRole || !updaterRole.permissions.canManageRoles) {
-      throw new ForbiddenError('You do not have permission to update permissions')
+      throw new ForbiddenError('Bạn không có quyền cập nhật quyền')
     }
   }
   
   const rolePermission = await RolePermission.findOne({ meeting: meetingId, user: targetUserId })
   if (!rolePermission) {
-    throw new NotFoundError('Role not found for this user')
+    throw new NotFoundError('Vai trò không tồn tại cho người dùng này')
   }
   
   Object.assign(rolePermission.permissions, permissions)
@@ -166,31 +166,31 @@ async function updatePermissions(meetingId, userId, targetUserId, permissions) {
 }
 
 /**
- * Remove role (reset to participant)
+ * Xóa vai trò khỏi người dùng
  */
 async function removeRole(meetingId, userId, targetUserId) {
   const meeting = await MeetingRoom.findById(meetingId)
   if (!meeting) {
-    throw new NotFoundError('Meeting not found')
+    throw new NotFoundError('Cuộc họp không tồn tại')
   }
   
-  // Only host can remove roles
+  // Chỉ người tổ chức mới có thể xóa vai trò
   if (meeting.host.toString() !== userId.toString()) {
-    throw new ForbiddenError('Only the host can remove roles')
+    throw new ForbiddenError('Chỉ người tổ chức mới có thể xóa vai trò')
   }
   
-  // Cannot remove host role
+  // Không thể xóa vai trò của người tổ chức
   if (meeting.host.toString() === targetUserId.toString()) {
-    throw new ValidationError('Cannot remove host role')
+    throw new ValidationError('Không thể xóa vai trò của người tổ chức')
   }
   
   await RolePermission.findOneAndDelete({ meeting: meetingId, user: targetUserId })
   
-  return { message: 'Role removed successfully' }
+  return { message: 'Xóa vai trò thành công' }
 }
 
 /**
- * Check permission
+ * Kiểm tra quyền
  */
 async function checkPermission(meetingId, userId, permissionKey) {
   const userRole = await getUserRole(meetingId, userId)

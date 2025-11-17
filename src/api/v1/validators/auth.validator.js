@@ -1,4 +1,3 @@
-// Auth validation rules
 const { body } = require('express-validator')
 
 exports.loginValidation = [

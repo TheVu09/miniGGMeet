@@ -1,9 +1,8 @@
-// Authentication middleware
 const { UnauthorizedError } = require('../../../utils/error.util')
 
 const requireAuth = (req, res, next) => {
   if (!req.session || !req.session.user) {
-    throw new UnauthorizedError('Please login to continue')
+    throw new UnauthorizedError('Đăng nhập để tiếp tục')
   }
   req.user = req.session.user
   next()

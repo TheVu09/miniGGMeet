@@ -11,10 +11,6 @@ const {
   getUserFiles
 } = require('../controllers/files/fileShare.controller')
 
-// Note: multer middleware should be added here for file uploads
-// const multer = require('multer')
-// const upload = multer({ dest: 'uploads/' })
-
 // POST /api/v1/files/meeting/:meetingId/upload - Upload file
 // router.post('/meeting/:meetingId/upload', requireAuth, meetingIdValidation, validate, upload.single('file'), uploadFile)
 router.post('/meeting/:meetingId/upload', requireAuth, meetingIdValidation, validate, uploadFile)

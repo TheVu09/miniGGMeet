@@ -15,7 +15,7 @@ async function assignRole(req, res, next) {
       customPermissions
     )
     
-    res.json(ApiResponse.success(rolePermission, 'Role assigned successfully'))
+    res.json(ApiResponse.success(rolePermission, 'Phân quyền thành công'))
   } catch (error) {
     next(error)
   }
@@ -28,7 +28,7 @@ async function getUserRole(req, res, next) {
     
     const role = await rolePermissionService.getUserRole(meetingId, userId)
     
-    res.json(ApiResponse.success(role, 'Role retrieved successfully'))
+    res.json(ApiResponse.success(role, 'Lấy vai trò thành công'))
   } catch (error) {
     next(error)
   }
@@ -41,7 +41,7 @@ async function getMeetingRoles(req, res, next) {
     
     const roles = await rolePermissionService.getMeetingRoles(meetingId, userId)
     
-    res.json(ApiResponse.success(roles, 'Roles retrieved successfully'))
+    res.json(ApiResponse.success(roles, 'Lấy danh sách vai trò thành công'))
   } catch (error) {
     next(error)
   }
@@ -60,7 +60,7 @@ async function updatePermissions(req, res, next) {
       permissions
     )
     
-    res.json(ApiResponse.success(rolePermission, 'Permissions updated successfully'))
+    res.json(ApiResponse.success(rolePermission, 'Cập nhật quyền thành công'))
   } catch (error) {
     next(error)
   }
@@ -73,7 +73,7 @@ async function removeRole(req, res, next) {
     
     const result = await rolePermissionService.removeRole(meetingId, userId, targetUserId)
     
-    res.json(ApiResponse.success(result, 'Role removed successfully'))
+    res.json(ApiResponse.success(result, 'Xóa vai trò thành công'))
   } catch (error) {
     next(error)
   }

@@ -3,13 +3,13 @@ const User = require('../../../models/User')
 const { NotFoundError, ValidationError, ForbiddenError } = require('../../../utils/error.util')
 
 /**
- * Create scheduled meeting
+ * Tạo lịch họp
  */
 async function createSchedule(userId, scheduleData) {
   try {
-    console.log('Creating schedule with data:', { userId, ...scheduleData })
+    console.log('Đang tạo lịch với dữ liệu:', { userId, ...scheduleData })
     
-    // Extract and clean data
+    // Trích xuất và làm sạch dữ liệu
     const {
       title,
       description = '',
@@ -26,25 +26,25 @@ async function createSchedule(userId, scheduleData) {
     const end = new Date(scheduledEndTime)
     
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new ValidationError('Invalid date format')
+      throw new ValidationError('Định dạng ngày không hợp lệ')
     }
     
     if (start >= end) {
-      throw new ValidationError('End time must be after start time')
+      throw new ValidationError('Thời gian kết thúc phải sau thời gian bắt đầu')
     }
     
     if (start < new Date()) {
-      throw new ValidationError('Cannot schedule meeting in the past')
+      throw new ValidationError('Không thể lên lịch họp trong quá khứ')
     }
     
     // Validate duration
     const durationMs = end.getTime() - start.getTime()
     const durationMinutes = Math.round(durationMs / 60000)
     if (durationMinutes !== parseInt(duration)) {
-      throw new ValidationError('Duration does not match start and end times')
+      throw new ValidationError('Thời lượng không khớp với thời gian bắt đầu và kết thúc')
     }
     
-    // Prepare schedule data
+    // Chuẩn bị dữ liệu lịch họp
     const schedulePayload = {
       title,
       description,
@@ -62,11 +62,11 @@ async function createSchedule(userId, scheduleData) {
       }))
     }
     
-    console.log('Creating schedule with payload:', schedulePayload)
+    console.log('Đang tạo lịch với payload:', schedulePayload)
     
-    // Create schedule
+    // Tạo lịch
     const schedule = await MeetingSchedule.create(schedulePayload)
-    console.log('Schedule created:', schedule._id)
+    console.log('Lịch đã được tạo:', schedule._id)
     
     const populatedSchedule = await schedule.populate([
       { path: 'organizer', select: 'displayName email' },
@@ -89,7 +89,7 @@ async function createSchedule(userId, scheduleData) {
     }
     
     if (error.code === 11000) {
-      throw new ValidationError('A schedule already exists at this time')
+      throw new ValidationError('Lịch họp với tiêu đề này đã tồn tại')
     }
     
     throw error
@@ -102,7 +102,7 @@ async function createSchedule(userId, scheduleData) {
 }
 
 /**
- * Get user schedules
+ * Lấy lịch họp của người dùng
  */
 async function getUserSchedules(userId, { status, startDate, endDate } = {}) {
   const query = {
@@ -131,7 +131,7 @@ async function getUserSchedules(userId, { status, startDate, endDate } = {}) {
 }
 
 /**
- * Get schedule by ID
+ * Lấy lịch họp theo ID
  */
 async function getScheduleById(scheduleId, userId) {
   const schedule = await MeetingSchedule.findById(scheduleId)
@@ -140,35 +140,35 @@ async function getScheduleById(scheduleId, userId) {
     .populate('meetingRoom')
   
   if (!schedule) {
-    throw new NotFoundError('Schedule not found')
+    throw new NotFoundError('Lịch họp không tồn tại')
   }
   
-  // Check if user has access
+  // Kiểm tra nếu người dùng có quyền truy cập
   const isOrganizer = schedule.organizer._id.toString() === userId.toString()
   const isParticipant = schedule.participants.some(p => p.user && p.user._id.toString() === userId.toString())
   
   if (!isOrganizer && !isParticipant) {
-    throw new ForbiddenError('You do not have access to this schedule')
+    throw new ForbiddenError('Bạn không có quyền truy cập lịch họp này')
   }
   
   return schedule
 }
 
 /**
- * Update schedule
+ * Cập nhật lịch họp
  */
 async function updateSchedule(scheduleId, userId, updateData) {
   const schedule = await MeetingSchedule.findById(scheduleId)
   if (!schedule) {
-    throw new NotFoundError('Schedule not found')
+    throw new NotFoundError('Lịch họp không tồn tại')
   }
   
   if (schedule.organizer.toString() !== userId.toString()) {
-    throw new ForbiddenError('Only the organizer can update the schedule')
+    throw new ForbiddenError('Chỉ người tổ chức mới có thể cập nhật lịch họp')
   }
   
   if (schedule.status === 'cancelled') {
-    throw new ValidationError('Cannot update cancelled schedule')
+    throw new ValidationError('Không thể cập nhật lịch họp đã bị hủy')
   }
   
   Object.assign(schedule, updateData)
@@ -181,16 +181,16 @@ async function updateSchedule(scheduleId, userId, updateData) {
 }
 
 /**
- * Cancel schedule
+ * Hủy lịch họp
  */
 async function cancelSchedule(scheduleId, userId, cancellationReason) {
   const schedule = await MeetingSchedule.findById(scheduleId)
   if (!schedule) {
-    throw new NotFoundError('Schedule not found')
+    throw new NotFoundError('Lịch họp không tồn tại')
   }
   
   if (schedule.organizer.toString() !== userId.toString()) {
-    throw new ForbiddenError('Only the organizer can cancel the schedule')
+    throw new ForbiddenError('Chỉ người tổ chức mới có thể hủy lịch họp')
   }
   
   schedule.status = 'cancelled'
@@ -202,17 +202,17 @@ async function cancelSchedule(scheduleId, userId, cancellationReason) {
 }
 
 /**
- * Respond to invitation (accept/decline/tentative)
+ * Phản hồi lời mời (chấp nhận/từ chối/tạm thời)
  */
 async function respondToInvitation(scheduleId, userId, response) {
   const schedule = await MeetingSchedule.findById(scheduleId)
   if (!schedule) {
-    throw new NotFoundError('Schedule not found')
+    throw new NotFoundError('Lịch họp không tồn tại')
   }
   
   const participant = schedule.participants.find(p => p.user && p.user.toString() === userId.toString())
   if (!participant) {
-    throw new NotFoundError('You are not invited to this meeting')
+    throw new NotFoundError('Bạn không được mời tham gia cuộc họp này')
   }
   
   participant.status = response
@@ -226,7 +226,7 @@ async function respondToInvitation(scheduleId, userId, response) {
 }
 
 /**
- * Get upcoming schedules (next 7 days)
+ * Lấy lịch họp sắp tới (7 ngày tiếp theo)
  */
 async function getUpcomingSchedules(userId) {
   const now = new Date()

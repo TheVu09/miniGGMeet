@@ -7,6 +7,24 @@
     --danger: #ff5b7f
 }
 
+/* Screen sharing styles */
+.video-tile.screen-sharing {
+    border: 2px solid var(--accent);
+    position: relative;
+}
+
+.video-tile.screen-sharing::after {
+    content: '🖥️ Đang chia sẻ màn hình';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.7);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--fg);
+}
+
 * {
     box-sizing: border-box
 }

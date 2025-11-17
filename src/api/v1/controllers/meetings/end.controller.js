@@ -1,4 +1,3 @@
-// End Meeting Controller
 const meetingService = require('../../services/meeting.service')
 const ApiResponse = require('../../../../utils/response.util')
 
@@ -9,7 +8,7 @@ exports.endMeeting = async (req, res, next) => {
     
     await meetingService.endMeeting(userId, code)
     
-    return ApiResponse.success(res, null, 'Meeting ended successfully')
+    return ApiResponse.success(res, null, 'Cuộc họp đã kết thúc thành công')
   } catch (error) {
     next(error)
   }

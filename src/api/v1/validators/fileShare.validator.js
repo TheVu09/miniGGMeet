@@ -2,14 +2,14 @@ const { body, param } = require('express-validator')
 
 const meetingIdValidation = [
   param('meetingId')
-    .notEmpty().withMessage('Meeting ID is required')
-    .isMongoId().withMessage('Invalid meeting ID')
+    .notEmpty().withMessage('Meeting ID là bắt buộc')
+    .isMongoId().withMessage('Meeting ID không hợp lệ')
 ]
 
 const fileIdValidation = [
   param('fileId')
-    .notEmpty().withMessage('File ID is required')
-    .isMongoId().withMessage('Invalid file ID')
+    .notEmpty().withMessage('File ID là bắt buộc')
+    .isMongoId().withMessage('File ID không hợp lệ')
 ]
 
 module.exports = {

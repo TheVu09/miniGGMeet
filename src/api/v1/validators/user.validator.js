@@ -4,22 +4,22 @@ const { body, param } = require('express-validator')
 exports.sendFriendRequestValidation = [
   body('email')
     .isEmail()
-    .withMessage('Please provide a valid email')
+    .withMessage('Làm ơn cung cấp email hợp lệ')
     .normalizeEmail()
 ]
 
 exports.friendRequestActionValidation = [
   body('requesterId')
     .notEmpty()
-    .withMessage('Requester ID is required')
+    .withMessage('ID người gửi yêu cầu là bắt buộc')
     .isMongoId()
-    .withMessage('Invalid requester ID')
+    .withMessage('ID người gửi yêu cầu không hợp lệ')
 ]
 
 exports.removeFriendValidation = [
   param('friendId')
     .notEmpty()
-    .withMessage('Friend ID is required')
+    .withMessage('ID bạn bè là bắt buộc')
     .isMongoId()
-    .withMessage('Invalid friend ID')
+    .withMessage('ID bạn bè không hợp lệ')
 ]

@@ -1,4 +1,3 @@
-// Validation middleware using express-validator
 const { validationResult } = require('express-validator')
 const { ValidationError } = require('../../../utils/error.util')
 

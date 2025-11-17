@@ -3,7 +3,7 @@ const MeetingRoom = require('../../../models/MeetingRoom')
 const { NotFoundError, ForbiddenError } = require('../../../utils/error.util')
 
 /**
- * Update device status
+ * Cập nhật trạng thái thiết bị của người dùng trong cuộc họp
  */
 async function updateDeviceStatus(meetingId, userId, statusData) {
   const meeting = await MeetingRoom.findById(meetingId)
@@ -11,7 +11,7 @@ async function updateDeviceStatus(meetingId, userId, statusData) {
     throw new NotFoundError('Meeting not found')
   }
   
-  // Find or create device status
+  // Tìm kiếm trạng thái thiết bị hiện tại
   let deviceStatus = await DeviceStatus.findOne({ meeting: meetingId, user: userId })
   
   if (!deviceStatus) {
@@ -31,7 +31,7 @@ async function updateDeviceStatus(meetingId, userId, statusData) {
 }
 
 /**
- * Get device status for all participants in meeting
+ * Lấy trạng thái thiết bị của tất cả người tham gia trong cuộc họp
  */
 async function getMeetingDeviceStatuses(meetingId, userId) {
   const meeting = await MeetingRoom.findById(meetingId)
@@ -39,7 +39,7 @@ async function getMeetingDeviceStatuses(meetingId, userId) {
     throw new NotFoundError('Meeting not found')
   }
   
-  // Check if user is participant
+  // Kiểm tra nếu người dùng là người tham gia
   if (!meeting.participants.includes(userId) && meeting.host.toString() !== userId.toString()) {
     throw new ForbiddenError('You are not a participant of this meeting')
   }
@@ -52,7 +52,7 @@ async function getMeetingDeviceStatuses(meetingId, userId) {
 }
 
 /**
- * Get single user device status in meeting
+ * Lấy trạng thái thiết bị của một người dùng trong cuộc họp
  */
 async function getUserDeviceStatus(meetingId, userId) {
   const deviceStatus = await DeviceStatus.findOne({ meeting: meetingId, user: userId })
@@ -66,7 +66,7 @@ async function getUserDeviceStatus(meetingId, userId) {
 }
 
 /**
- * Toggle mute status
+ * Chuyển đổi trạng thái tắt tiếng
  */
 async function toggleMute(meetingId, userId) {
   const deviceStatus = await DeviceStatus.findOne({ meeting: meetingId, user: userId })
@@ -82,7 +82,7 @@ async function toggleMute(meetingId, userId) {
 }
 
 /**
- * Toggle video status
+ * Chuyển đổi trạng thái video
  */
 async function toggleVideo(meetingId, userId) {
   const deviceStatus = await DeviceStatus.findOne({ meeting: meetingId, user: userId })
@@ -98,7 +98,7 @@ async function toggleVideo(meetingId, userId) {
 }
 
 /**
- * Toggle screen sharing
+ * Chuyển đổi trạng thái chia sẻ màn hình
  */
 async function toggleScreenShare(meetingId, userId) {
   const deviceStatus = await DeviceStatus.findOne({ meeting: meetingId, user: userId })
@@ -115,7 +115,7 @@ async function toggleScreenShare(meetingId, userId) {
 }
 
 /**
- * Toggle hand raise
+ * Chuyển đổi trạng thái giơ tay
  */
 async function toggleHandRaise(meetingId, userId) {
   const deviceStatus = await DeviceStatus.findOne({ meeting: meetingId, user: userId })
@@ -132,7 +132,7 @@ async function toggleHandRaise(meetingId, userId) {
 }
 
 /**
- * Mute all participants (host only)
+ * Tắt tiếng tất cả người tham gia (chỉ chủ trì)
  */
 async function muteAll(meetingId, hostId) {
   const meeting = await MeetingRoom.findById(meetingId)
