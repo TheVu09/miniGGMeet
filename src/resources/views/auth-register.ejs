@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng ký</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="auth-wrap">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10">
+            <div class="row g-0 align-items-stretch auth-shell">
+              <!-- Left marketing panel -->
+              <div class="col-md-6 p-3">
+                <div class="card card-3d h-100 p-4 tilt-on-hover auth-left">
+                  <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="fs-4">🎥</div>
+                    <div class="fw-bold fs-4">MINIGGMeet</div>
+                  </div>
+                  <h5 class="text-light">Join Our Community</h5>
+                  <p class="text-secondary">Kết nối bạn bè, đồng nghiệp, và cộng đồng bằng gọi thoại, video, và nhắn tin chất lượng cao.</p>
+                  <ul class="list-unstyled mt-3 d-grid gap-2">
+                    <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Tối đa 250 người tham gia</li>
+                    <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Mã hoá đầu-cuối (MVP)</li>
+                    <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Chia sẻ màn hình & ghi lại</li>
+                    <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Nhắn tin thời gian thực</li>
+                    <li class="text-secondary"><i class="bi bi-check-circle-fill text-success me-2"></i>Đa nền tảng</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Right sign-up panel -->
+              <div class="col-md-6 p-3">
+                <div class="card h-100 p-4 auth-right">
+                  <ul class="nav nav-pills mb-3">
+                    <li class="nav-item"><a class="nav-link" href="/auth/login">Đăng nhập</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/auth/register">Đăng ký</a></li>
+                  </ul>
+                  <h5 class="fw-bold mb-3">Tạo tài khoản</h5>
+
+                  <div class="d-grid gap-2 mb-3">
+                    <button class="btn btn-outline-secondary" type="button" disabled><i class="bi bi-google me-2"></i> Google</button>
+                    <button class="btn btn-outline-secondary" type="button" disabled><i class="bi bi-github me-2"></i> GitHub</button>
+                    <button class="btn btn-outline-secondary" type="button" disabled><i class="bi bi-discord me-2"></i> Discord</button>
+                  </div>
+                  <div class="text-center text-secondary small mb-3">hoặc</div>
+
+                  <div class="alert alert-danger d-none" id="errorAlert"></div>
+                  <form class="row g-3" id="registerForm">
+                    <div class="col-12">
+                      <label class="form-label">Email</label>
+                      <input class="form-control" name="email" type="email" placeholder="Nhập email" required />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Tên hiển thị</label>
+                      <input class="form-control" name="displayName" placeholder="Tên hiển thị" required />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Mật khẩu</label>
+                      <div class="input-group">
+                        <input class="form-control" type="password" name="password" placeholder="Mật khẩu" required />
+                        <span class="input-group-text"><i class="bi bi-eye-slash"></i></span>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Xác nhận mật khẩu</label>
+                      <div class="input-group">
+                        <input class="form-control" type="password" name="confirmPassword" placeholder="Nhập lại mật khẩu" required />
+                        <span class="input-group-text"><i class="bi bi-eye-slash"></i></span>
+                      </div>
+                    </div>
+                    <div class="col-12 d-grid">
+                      <button class="btn btn-success btn-3d" type="submit" id="registerBtn">
+                        <span class="spinner-border spinner-border-sm d-none" id="registerSpinner"></span>
+                        <span id="registerText">Tạo tài khoản</span>
+                      </button>
+                    </div>
+                  </form>
+                  <p class="mt-3">Đã có tài khoản? <a href="/auth/login">Đăng nhập</a></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api/auth.api.js"></script>
+    <script>
+      const registerForm = document.getElementById('registerForm')
+      const errorAlert = document.getElementById('errorAlert')
+      const registerBtn = document.getElementById('registerBtn')
+      const registerSpinner = document.getElementById('registerSpinner')
+      const registerText = document.getElementById('registerText')
+
+      registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        
+        // Get form data
+        const formData = new FormData(registerForm)
+        const email = formData.get('email')
+        const displayName = formData.get('displayName')
+        const password = formData.get('password')
+        const confirmPassword = formData.get('confirmPassword')
+        
+        // Show loading state
+        registerBtn.disabled = true
+        registerSpinner.classList.remove('d-none')
+        registerText.textContent = 'Đang tạo tài khoản...'
+        errorAlert.classList.add('d-none')
+        
+        try {
+          // Call API
+          await authAPI.register(email, displayName, password, confirmPassword)
+          
+          // Redirect to home on success
+          window.location.href = '/'
+        } catch (error) {
+          // Show error
+          errorAlert.textContent = error.message
+          errorAlert.classList.remove('d-none')
+          
+          // Reset button state
+          registerBtn.disabled = false
+          registerSpinner.classList.add('d-none')
+          registerText.textContent = 'Tạo tài khoản'
+        }
+      })
+    </script>
+  </body>
+  </html>
