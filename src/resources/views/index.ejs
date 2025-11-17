@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>MiniGGMeet</title>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+		<link rel="stylesheet" href="/styles.css" />
+		<style>
+			.home-wrap { min-height: 100vh; display: grid; grid-template-columns: 260px 1fr; }
+			.home-side { padding: 24px 16px; border-right: 1px solid #202a44; background: #0b101c }
+			.home-main { padding: 24px 32px }
+			.home-hero h1 { font-size: clamp(28px, 4vw, 48px); font-weight: 800; line-height: 1.1; margin-bottom: 8px }
+			.home-hero p { color: var(--muted); font-size: 16px }
+			.home-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px }
+			.home-divider { border: 0; border-top: 1px solid #202a44; margin: 24px 0 }
+			.topbar { display:flex; gap:12px; align-items:center; justify-content:flex-end }
+			.clock { color: var(--muted) }
+			.brand { display:flex; align-items:center; gap:8px; font-weight:700 }
+		</style>
+	</head>
+	<body>
+		<div class="home-wrap">
+			<!-- Left sidebar -->
+			<aside class="home-side">
+				<div class="brand mb-3">
+					<i class="bi bi-camera-video-fill"></i>
+					MiniGGMeet
+				</div>
+				<nav class="nav flex-column">
+					<a class="nav-link text-light" href="/"><i class="bi bi-house me-2"></i> Trang chủ</a>
+					<% if (user) { %>
+						<a class="nav-link text-light" href="/schedules"><i class="bi bi-calendar-event me-2"></i> Lịch họp</a>
+						<a class="nav-link text-light" href="/friends"><i class="bi bi-people me-2"></i> Bạn bè</a>
+					<% } %>
+				</nav>
+			</aside>
+
+			<!-- Main content -->
+			<main class="home-main">
+				<div class="topbar mb-3">
+					<% if (user) { %>
+						<span>Xin chào, <b><%= user.displayName %></b></span>
+						<button class="btn btn-sm btn-outline-light" id="logoutBtn">Đăng xuất</button>
+					<% } else { %>
+						<a class="btn btn-sm btn-outline-light" href="/auth/login">Đăng nhập</a>
+						<a class="btn btn-sm btn-primary" href="/auth/register">Đăng ký</a>
+					<% } %>
+					<span class="clock" id="clock"></span>
+				</div>
+
+				<section class="home-hero">
+					<h2>Tính năng họp và gọi video dành cho tất cả mọi người</h2>
+					<p>Kết nối, cộng tác và ăn mừng ở mọi nơi với MiniGGMeet</p>
+
+					<div class="home-actions">
+						<button class="btn btn-primary btn-3d" id="createMeetingBtn">
+							<span class="spinner-border spinner-border-sm d-none" id="createSpinner"></span>
+							<i class="bi bi-plus-circle me-2" id="createIcon"></i> 
+							<span id="createText">Cuộc họp mới</span>
+						</button>
+						<div class="input-group" style="max-width: 380px">
+							<input class="form-control" id="joinCode" placeholder="Nhập một mã hoặc đường liên kết" maxlength="64" />
+							<button class="btn btn-outline-primary" onclick="goJoin()">Tham gia</button>
+						</div>
+					</div>
+
+					<hr class="home-divider" />
+
+					<div class="card card-3d p-4 tilt-on-hover" style="max-width: 720px">
+						<div class="d-flex align-items-center justify-content-between">
+							<div>
+								<div class="h5 mb-1">Dùng thử các tính năng nâng cao</div>
+								<div class="text-secondary">Gọi nhóm lâu hơn và nhiều lợi ích khác trong 1 tháng</div>
+							</div>
+							<a class="btn btn-outline-light btn-3d" href="#">Bắt đầu dùng thử</a>
+						</div>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<script src="/public/js/api/auth.api.js"></script>
+		<script src="/public/js/api/meeting.api.js"></script>
+		<script>
+			function goJoin() {
+				const v = document.getElementById('joinCode').value.trim()
+				if (!v) return
+				// Nếu là mã 8 ký tự, đi thẳng tới /meeting/<code>; nếu là URL chứa mã, tách phần cuối
+				const m = v.match(/[A-Za-z0-9_-]{6,64}$/)
+				const code = m ? m[0] : v
+				window.location.href = '/meeting/' + code
+			}
+			function updateClock(){
+				const el = document.getElementById('clock')
+				const d = new Date()
+				const opts = { weekday: 'short', day: '2-digit', month: '2-digit' }
+				el.textContent = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' • ' + d.toLocaleDateString('vi-VN', opts)
+			}
+			updateClock(); setInterval(updateClock, 1000)
+		</script>
+
+		<% if (user) { %>
+		<script>
+			// Logout handler
+			const logoutBtn = document.getElementById('logoutBtn')
+			logoutBtn.addEventListener('click', async () => {
+				try {
+					await authAPI.logout()
+					window.location.reload()
+				} catch (error) {
+					console.error('Logout failed:', error)
+					alert('Đăng xuất thất bại')
+				}
+			})
+
+			// Create meeting handler
+			const createMeetingBtn = document.getElementById('createMeetingBtn')
+			const createSpinner = document.getElementById('createSpinner')
+			const createIcon = document.getElementById('createIcon')
+			const createText = document.getElementById('createText')
+
+			createMeetingBtn.addEventListener('click', async () => {
+				// Show loading state
+				createMeetingBtn.disabled = true
+				createSpinner.classList.remove('d-none')
+				createIcon.classList.add('d-none')
+				createText.textContent = 'Đang tạo...'
+
+				try {
+					const result = await meetingAPI.createMeeting('Cuộc họp nhanh', 50)
+					// Redirect to meeting room
+					window.location.href = '/meeting/' + result.meeting.code
+				} catch (error) {
+					console.error('Create meeting failed:', error)
+					alert('Tạo cuộc họp thất bại: ' + error.message)
+					
+					// Reset button state
+					createMeetingBtn.disabled = false
+					createSpinner.classList.add('d-none')
+					createIcon.classList.remove('d-none')
+					createText.textContent = 'Cuộc họp mới'
+				}
+			})
+		</script>
+		<% } %>
+		
+		<script src="/js/api/auth.api.js"></script>
+		<script src="/js/api/meeting.api.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	</body>
+</html>

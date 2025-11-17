@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý Breakout Rooms - MINIGGMeet</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .room-card {
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    .room-card.active {
+      border-color: #0d6efd;
+      box-shadow: 0 0 12px rgba(13, 110, 253, 0.3);
+    }
+    .room-card.closed {
+      opacity: 0.6;
+      border-color: #6c757d;
+    }
+    .participant-item {
+      padding: 8px;
+      margin-bottom: 4px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .drag-over {
+      background: #e7f1ff;
+      border: 2px dashed #0d6efd;
+    }
+    .unassigned-area {
+      min-height: 200px;
+      border: 2px dashed #6c757d;
+      border-radius: 8px;
+      padding: 16px;
+      background: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">
+        <i class="bi bi-camera-video"></i> MINIGGMeet
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> Trang chủ</a></li>
+          <li class="nav-item"><a class="nav-link" href="/friends"><i class="bi bi-people"></i> Bạn bè</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <!-- Meeting Selection -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row align-items-end">
+          <div class="col-md-8">
+            <label class="form-label">Chọn phòng họp</label>
+            <input type="text" class="form-control" id="meetingCode" placeholder="Nhập mã phòng họp">
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-primary w-100" onclick="loadMeeting()">
+              <i class="bi bi-search"></i> Tải phòng họp
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="meetingContent" style="display: none;">
+      <!-- Control Panel -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-sliders"></i> Điều khiển Breakout Rooms</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Số phòng</label>
+              <input type="number" class="form-control" id="numberOfRooms" min="2" max="50" value="3">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Kiểu phân bổ</label>
+              <select class="form-select" id="assignmentType">
+                <option value="manual">Thủ công</option>
+                <option value="random">Ngẫu nhiên</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Sức chứa/phòng</label>
+              <input type="number" class="form-control" id="capacity" min="2" max="50" value="10">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">&nbsp;</label>
+              <button class="btn btn-success w-100" onclick="createBreakoutRooms()">
+                <i class="bi bi-plus-circle"></i> Tạo phòng
+              </button>
+            </div>
+          </div>
+          <div class="mt-3 d-flex gap-2">
+            <button class="btn btn-primary" onclick="startBreakoutRooms()">
+              <i class="bi bi-play-circle"></i> Bắt đầu
+            </button>
+            <button class="btn btn-danger" onclick="closeAllBreakoutRooms()">
+              <i class="bi bi-stop-circle"></i> Đóng tất cả
+            </button>
+            <button class="btn btn-info" onclick="broadcastPrompt()">
+              <i class="bi bi-megaphone"></i> Thông báo
+            </button>
+            <button class="btn btn-secondary" onclick="loadBreakoutRooms()">
+              <i class="bi bi-arrow-clockwise"></i> Làm mới
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Unassigned Participants -->
+        <div class="col-md-3">
+          <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+              <h6 class="mb-0"><i class="bi bi-people"></i> Chưa phân bổ (<span id="unassignedCount">0</span>)</h6>
+            </div>
+            <div class="card-body p-2">
+              <div class="unassigned-area" id="unassignedParticipants">
+                <p class="text-muted text-center">Không có người tham gia</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breakout Rooms -->
+        <div class="col-md-9">
+          <div class="row" id="breakoutRoomsContainer">
+            <div class="col-12">
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Chọn một phòng họp để bắt đầu quản lý Breakout Rooms
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Room Detail Modal -->
+  <div class="modal fade" id="roomDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="roomDetailTitle"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="roomDetailBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" class="btn btn-danger" id="closeRoomBtn">Đóng phòng này</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/api/breakout.api.js"></script>
+  <script>
+    let currentMeetingId = null
+    let breakoutRooms = []
+    let unassignedParticipants = []
+
+    // Load meeting from URL parameter
+    async function loadMeeting() {
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('meeting') || document.getElementById('meetingCode').value.trim()
+      
+      if (!code) {
+        alert('Vui lòng nhập mã phòng họp')
+        return
+      }
+
+      console.log('Loading meeting with code:', code)
+
+      try {
+        // Fetch meeting by code to get the ID
+        const response = await fetch(`/api/v1/meetings/${code}`)
+        console.log('Response status:', response.status)
+        
+        const data = await response.json()
+        console.log('Response data:', data)
+        
+        if (!data.success) {
+          throw new Error(data.message || 'Meeting not found')
+        }
+        
+        currentMeetingId = data.data.meeting._id
+        console.log('Meeting loaded, ID:', currentMeetingId)
+        
+        // Auto-join meeting to become participant
+        try {
+          console.log('Auto-joining meeting...')
+          const joinResponse = await fetch(`/api/v1/meetings/${code}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          const joinData = await joinResponse.json()
+          if (joinData.success) {
+            console.log('Successfully joined meeting')
+          }
+        } catch (joinErr) {
+          console.warn('Join failed, may already be participant:', joinErr)
+        }
+        
+        document.getElementById('meetingCode').value = code
+        document.getElementById('meetingContent').style.display = 'block'
+        loadBreakoutRooms()
+      } catch (err) {
+        console.error('Error loading meeting:', err)
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Auto-load if meeting code in URL
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.get('meeting')) {
+        loadMeeting()
+      }
+    })
+
+    // Auto-refresh every 5 seconds to see updates
+    setInterval(() => {
+      if (currentMeetingId) {
+        loadBreakoutRooms()
+      }
+    }, 5000)
+
+    // Load breakout rooms
+    async function loadBreakoutRooms() {
+      if (!currentMeetingId) return
+      try {
+        const rooms = await breakoutAPI.getRooms(currentMeetingId)
+        breakoutRooms = rooms
+        renderBreakoutRooms()
+      } catch (err) {
+        document.getElementById('breakoutRoomsContainer').innerHTML = 
+          `<div class="col-12"><div class="alert alert-warning">Chưa có Breakout Rooms nào. Tạo mới để bắt đầu!</div></div>`
+      }
+    }
+
+    // Create breakout rooms
+    async function createBreakoutRooms() {
+      if (!currentMeetingId) {
+        alert('Chưa chọn phòng họp!')
+        return
+      }
+      
+      const numberOfRooms = parseInt(document.getElementById('numberOfRooms').value)
+      const assignmentType = document.getElementById('assignmentType').value
+      const capacity = parseInt(document.getElementById('capacity').value)
+
+      if (numberOfRooms < 2 || numberOfRooms > 50) {
+        alert('Số phòng phải từ 2 đến 50')
+        return
+      }
+
+      try {
+        console.log('Creating breakout rooms:', { currentMeetingId, numberOfRooms, assignmentType, capacity })
+        const result = await breakoutAPI.createRooms(currentMeetingId, numberOfRooms, assignmentType, [], capacity)
+        console.log('Created rooms:', result)
+        alert(`Đã tạo ${result.length} phòng Breakout thành công!`)
+        loadBreakoutRooms()
+      } catch (err) {
+        console.error('Error creating breakout rooms:', err)
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Render breakout rooms
+    function renderBreakoutRooms() {
+      const container = document.getElementById('breakoutRoomsContainer')
+      if (breakoutRooms.length === 0) {
+        container.innerHTML = '<div class="col-12"><div class="alert alert-info">Chưa có Breakout Rooms. Tạo mới để bắt đầu!</div></div>'
+        return
+      }
+
+      container.innerHTML = breakoutRooms.map(room => `
+        <div class="col-md-6 col-lg-4 mb-3">
+          <div class="room-card card ${room.status}" data-room-id="${room._id}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <strong>${room.roomName || 'Room ' + room.roomCode}</strong>
+              <span class="badge bg-${room.status === 'active' ? 'success' : room.status === 'waiting' ? 'warning' : 'secondary'}">
+                ${room.status}
+              </span>
+            </div>
+            <div class="card-body p-2">
+              <div class="mb-2 small text-muted">
+                <i class="bi bi-hash"></i> ${room.roomCode}
+                <span class="float-end">${room.assignedParticipants.length}/${room.capacity}</span>
+              </div>
+              <div class="participant-list" style="max-height: 150px; overflow-y: auto;">
+                ${room.assignedParticipants.map(p => `
+                  <div class="participant-item small">
+                    <span><i class="bi bi-person-circle"></i> ${p.username || p.userId}</span>
+                    <button class="btn btn-sm btn-outline-danger btn-sm" onclick="removeFromRoom('${room._id}', '${p.userId}')">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
+                `).join('') || '<p class="text-muted small text-center">Chưa có người</p>'}
+              </div>
+              <div class="mt-2 d-flex gap-1">
+                <button class="btn btn-sm btn-primary flex-grow-1" onclick="joinRoom('${room._id}')">
+                  <i class="bi bi-box-arrow-in-right"></i> Tham gia
+                </button>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewRoomDetail('${room._id}')">
+                  <i class="bi bi-eye"></i>
+                </button>
+                ${room.status !== 'closed' ? `
+                  <button class="btn btn-sm btn-outline-danger" onclick="closeRoom('${room._id}')">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('')
+
+      // Enable drag and drop
+      enableDragDrop()
+    }
+
+    // Start breakout rooms
+    async function startBreakoutRooms() {
+      if (!currentMeetingId) return
+      try {
+        await breakoutAPI.startRooms(currentMeetingId)
+        alert('Đã khởi động tất cả Breakout Rooms!')
+        loadBreakoutRooms()
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Close all breakout rooms
+    async function closeAllBreakoutRooms() {
+      if (!currentMeetingId) return
+      if (!confirm('Đóng tất cả Breakout Rooms và đưa mọi người về phòng chính?')) return
+      try {
+        await breakoutAPI.closeAllRooms(currentMeetingId)
+        alert('Đã đóng tất cả Breakout Rooms!')
+        loadBreakoutRooms()
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Broadcast message
+    async function broadcastPrompt() {
+      if (!currentMeetingId) return
+      const message = prompt('Nhập thông báo gửi đến tất cả Breakout Rooms:')
+      if (!message) return
+      try {
+        await breakoutAPI.broadcast(currentMeetingId, message)
+        alert('Đã gửi thông báo!')
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // View room detail
+    async function viewRoomDetail(roomId) {
+      const room = breakoutRooms.find(r => r._id === roomId)
+      if (!room) return
+
+      document.getElementById('roomDetailTitle').textContent = room.roomName || 'Room ' + room.roomCode
+      document.getElementById('roomDetailBody').innerHTML = `
+        <p><strong>Mã phòng:</strong> ${room.roomCode}</p>
+        <p><strong>Trạng thái:</strong> <span class="badge bg-primary">${room.status}</span></p>
+        <p><strong>Sức chứa:</strong> ${room.assignedParticipants.length}/${room.capacity}</p>
+        <hr>
+        <h6>Người tham gia:</h6>
+        ${room.assignedParticipants.map(p => `
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span><i class="bi bi-person-circle"></i> ${p.username || p.userId}</span>
+            <button class="btn btn-sm btn-outline-danger" onclick="removeFromRoom('${roomId}', '${p.userId}')">Xóa</button>
+          </div>
+        `).join('') || '<p class="text-muted">Không có người nào</p>'}
+      `
+
+      document.getElementById('closeRoomBtn').onclick = () => closeRoom(roomId)
+      new bootstrap.Modal(document.getElementById('roomDetailModal')).show()
+    }
+
+    // Close specific room
+    async function closeRoom(roomId) {
+      if (!confirm('Đóng phòng này?')) return
+      try {
+        await breakoutAPI.closeRoom(roomId)
+        alert('Đã đóng phòng!')
+        loadBreakoutRooms()
+        bootstrap.Modal.getInstance(document.getElementById('roomDetailModal'))?.hide()
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Join breakout room
+    async function joinRoom(roomId) {
+      try {
+        const result = await breakoutAPI.joinRoom(roomId)
+        alert('Đã tham gia phòng! Đang chuyển hướng...')
+        // Redirect to meeting page with breakout room code
+        const room = breakoutRooms.find(r => r._id === roomId)
+        if (room) {
+          window.location.href = `/meeting/${room.roomCode}`
+        }
+      } catch (err) {
+        alert('Lỗi: ' + err.message)
+      }
+    }
+
+    // Remove from room
+    async function removeFromRoom(roomId, userId) {
+      // This would need a specific API endpoint - for now just reload
+      alert('Chức năng đang phát triển')
+    }
+
+    // Enable drag and drop (simplified - full implementation needs more work)
+    function enableDragDrop() {
+      // Placeholder for drag-drop functionality
+      console.log('Drag-drop enabled')
+    }
+  </script>
+</body>
+</html>
