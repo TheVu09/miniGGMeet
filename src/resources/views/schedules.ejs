@@ -56,7 +56,7 @@
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> Trang chủ</a></li>
           <li class="nav-item"><a class="nav-link active" href="/schedules"><i class="bi bi-calendar"></i> Lịch họp</a></li>
-          <li class="nav-item"><a class="nav-link" href="/friends"><i class="bi bi-people"></i> Bạn bè</a></li>
+
         </ul>
       </div>
     </div>
@@ -123,7 +123,7 @@
             <h5 class="mb-0"><i class="bi bi-clock-history"></i> Sắp diễn ra</h5>
           </div>
           <div class="card-body" id="upcomingSchedules">
-            <p class="text-muted text-center">Đang tải...</p>
+            <p class="text-light text-center">Đang tải...</p>
           </div>
         </div>
       </div>
@@ -132,7 +132,7 @@
       <div class="col-lg-8">
         <div class="card shadow-sm">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Tất cả lịch họp</h5>
+            <h5 class="mb-0 text-light"><i class="bi bi-calendar-event"></i> Tất cả lịch họp</h5>
             <div class="btn-group">
               <button class="btn btn-sm btn-outline-primary" data-filter="all">Tất cả</button>
               <button class="btn btn-sm btn-outline-primary" data-filter="scheduled">Đã lên lịch</button>
@@ -141,7 +141,7 @@
             </div>
           </div>
           <div class="card-body" id="allSchedules">
-            <p class="text-muted text-center">Đang tải lịch họp...</p>
+            <p class="text-light text-center">Đang tải lịch họp...</p>
           </div>
         </div>
       </div>
@@ -201,7 +201,7 @@
       }
 
       if (filtered.length === 0) {
-        container.innerHTML = '<p class="text-muted text-center">Không có lịch họp nào</p>'
+        container.innerHTML = '<p class="text-light text-center">Không có lịch họp nào</p>'
         return
       }
 
@@ -210,14 +210,14 @@
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-start">
               <div>
-                <h6 class="card-title">${schedule.title}</h6>
-                <p class="card-text text-muted small mb-2">${schedule.description || 'Không có mô tả'}</p>
-                <div class="mb-2">
+                <h6 class="card-title text-light">${schedule.title}</h6>
+                <p class="card-text text-light small mb-2">${schedule.description || 'Không có mô tả'}</p>
+                <div class="mb-2 text-light">
                   <i class="bi bi-clock"></i> ${new Date(schedule.startTime).toLocaleString('vi-VN')}
-                  <span class="badge bg-secondary ms-2">${schedule.duration} phút</span>
+                  <span class="badge text-light bg-secondary ms-2">${schedule.duration} phút</span>
                   ${schedule.recurrence.type !== 'none' ? `<span class="recurrence-badge ms-2"><i class="bi bi-arrow-repeat"></i> ${schedule.recurrence.type}</span>` : ''}
                 </div>
-                <div>
+                <div class="text-light">
                   <i class="bi bi-people"></i> ${schedule.participants.length} người
                   ${schedule.participants.slice(0, 3).map(p => 
                     `<span class="participant-badge ${p.status}">${p.email.split('@')[0]}</span>`

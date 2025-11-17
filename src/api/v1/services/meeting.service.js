@@ -11,7 +11,7 @@ class MeetingService {
     const { title, capacity = 250 } = meetingData
     const code = this.generateCode()
 
-    console.log('🔵 Creating meeting:', { userId, title, code, capacity })
+    console.log('Creating meeting:', { userId, title, code, capacity })
 
     const meeting = await MeetingRoom.create({
       title,
@@ -22,7 +22,7 @@ class MeetingService {
       isActive: true
     })
 
-    console.log('✅ Meeting created successfully:', {
+    console.log('Meeting created successfully:', {
       id: meeting._id,
       code: meeting.code,
       title: meeting.title,
@@ -32,13 +32,13 @@ class MeetingService {
     // Verify meeting was saved by querying it back
     const verification = await MeetingRoom.findOne({ code })
     if (verification) {
-      console.log('✅ Verified meeting exists in database:', {
+      console.log('Verified meeting exists in database:', {
         id: verification._id,
         code: verification.code,
         collection: MeetingRoom.collection.name
       })
     } else {
-      console.error('❌ WARNING: Meeting not found in database after creation!')
+      console.error('WARNING: Meeting not found in database after creation!')
     }
 
     return meeting

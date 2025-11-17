@@ -10,7 +10,7 @@ const { registerDMHandlers } = require('./dm.handler')
  * @param {SocketIO.Socket} socket - Connected socket instance
  */
 function registerSocketHandlers(io, socket) {
-  console.log(`🔌 New connection: ${socket.id}`)
+  console.log(`New connection: ${socket.id}`)
   
   // Register all handler modules
   registerMeetingHandlers(io, socket)

@@ -26,20 +26,6 @@ const requireAuth = (req, res, next) => {
 	next()
 }
 
-// Friends page
-router.get('/friends', requireAuth, async (req, res) => {
-	try {
-		const user = req.session.user
-		const me = await User.findById(user.id)
-			.populate('friendRequests', 'displayName email')
-			.populate('friends', 'displayName email')
-		res.render('friends', { user, me })
-	} catch (error) {
-		console.error('Error loading friends page:', error)
-		res.status(500).send('Server error')
-	}
-})
-
 // Meeting room view
 router.get('/meeting/:code', requireAuth, async (req, res) => {
 	try {

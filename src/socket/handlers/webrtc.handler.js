@@ -4,7 +4,7 @@
  * Handle webrtc:signal event (offer/answer/ICE candidates)
  */
 function handleSignal(io, socket, { code, to, data }) {
-  console.log(`📡 Signal from ${socket.id} to ${to}: ${data.sdp?.type || 'ICE candidate'}`)
+  console.log(`Signal from ${socket.id} to ${to}: ${data.sdp?.type || 'ICE candidate'}`)
   socket.to(to).emit('webrtc:signal', { from: socket.id, data })
 }
 
@@ -13,7 +13,7 @@ function handleSignal(io, socket, { code, to, data }) {
  * Notifies new peer about existing peers and broadcasts new peer to room
  */
 function handleReady(io, socket, { code }) {
-  console.log(`🎥 WebRTC ready from socket ${socket.id} (${socket.data?.displayName}) in room ${code}`)
+  console.log(`WebRTC ready from socket ${socket.id} (${socket.data?.displayName}) in room ${code}`)
   
   // Send list of existing peers to the newcomer
   const room = io.sockets.adapter.rooms.get(code)
@@ -25,7 +25,7 @@ function handleReady(io, socket, { code }) {
       if (socketId !== socket.id) {
         const peer = io.sockets.sockets.get(socketId)
         if (peer && peer.data) {
-          console.log(`  ➡️ Notifying ${socket.id} about existing peer ${socketId} (${peer.data.displayName})`)
+          console.log(`Notifying ${socket.id} about existing peer ${socketId} (${peer.data.displayName})`)
           // Notify newcomer about existing peer
           socket.emit('webrtc:peer-join', { id: socketId, info: peer.data })
         }
@@ -34,7 +34,7 @@ function handleReady(io, socket, { code }) {
   }
   
   // Broadcast newcomer to existing peers
-  console.log(`  📢 Broadcasting to room ${code} about new peer ${socket.id}`)
+  console.log(`Broadcasting to room ${code} about new peer ${socket.id}`)
   socket.to(code).emit('webrtc:peer-join', { id: socket.id, info: socket.data })
 }
 
@@ -43,12 +43,12 @@ function handleReady(io, socket, { code }) {
  * Notifies other peers to cleanup connection and remove video tile
  */
 function handleDisconnecting(io, socket) {
-  console.log(`🚪 Socket ${socket.id} (${socket.data?.displayName}) is disconnecting`)
+  console.log(`Socket ${socket.id} (${socket.data?.displayName}) is disconnecting`)
   
   const rooms = [...socket.rooms].filter((r) => r !== socket.id)
   
   rooms.forEach((code) => {
-    console.log(`  📢 Notifying room ${code} about peer leaving`)
+    console.log(`Notifying room ${code} about peer leaving`)
     io.to(code).emit('meeting:system', `${socket?.data?.displayName || 'Ai đó'} đã rời phòng`)
     // Notify other clients to remove peer connection and tile
     io.to(code).emit('webrtc:peer-left', { id: socket.id })

@@ -6,7 +6,7 @@ const Message = require('../../models/Message')
  * Handle meeting:join event
  */
 async function handleJoinMeeting(io, socket, { code, userId, displayName }) {
-  console.log(`👤 ${socket.id} (${displayName}) wants to join room ${code}`)
+  console.log(`${socket.id} (${displayName}) wants to join room ${code}`)
   
   try {
     // Check both regular meetings and breakout rooms
@@ -46,19 +46,19 @@ async function handleJoinMeeting(io, socket, { code, userId, displayName }) {
     
     if (current >= room.capacity) {
       socket.emit('meeting:error', `Phòng đã đầy (${room.capacity} người)`)
-      console.log(`⛔ Room ${code} is full: ${current}/${room.capacity}`)
+      console.log(`Room ${code} is full: ${current}/${room.capacity}`)
       return
     }
     
     socket.join(code)
     socket.data = { userId, displayName, code }
     
-    console.log(`✅ ${socket.id} joined room ${code} as ${displayName}. Room now has ${current + 1} participants`)
+    console.log(`${socket.id} joined room ${code} as ${displayName}. Room now has ${current + 1} participants`)
     
     io.to(code).emit('meeting:system', `${displayName} đã tham gia phòng`)
     socket.emit('meeting:joined', { code })
   } catch (e) {
-    console.error(`❌ Error joining room:`, e)
+    console.error(`Error joining room:`, e)
     socket.emit('meeting:error', 'Lỗi tham gia phòng')
   }
 }
